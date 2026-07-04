@@ -97,14 +97,20 @@ app.whenReady().then(async () => {
     return `data:image/${ext === 'jpg' ? 'jpeg' : ext};base64,${b64}`;
   });
 
-  ipcMain.handle('dialog:openPdf', async () => {
+  ipcMain.handle('pdf:extract', async () => {
     const r = await dialog.showOpenDialog(mainWindow, {
       title: 'PDF Dosyası Seç',
       filters: [{ name: 'PDF', extensions: ['pdf'] }],
       properties: ['openFile']
     });
     if (r.canceled || !r.filePaths[0]) return null;
-    return fs.readFileSync(r.filePaths[0]).toString('base64');
+    try {
+      const pdfParse = require('pdf-parse');
+      const data = await pdfParse(fs.readFileSync(r.filePaths[0]));
+      return data.text || '';
+    } catch (e) {
+      return { error: e.message };
+    }
   });
 
   ipcMain.handle('dialog:save', async (_, { defaultName, filters, dataBase64 }) => {
