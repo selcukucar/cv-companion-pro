@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Öz Geçmiş Asistanı v3.0</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="live-region" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+  <header class="app-header" role="banner">
+    <div class="header-inner">
+      <h1 class="app-title">Öz Geçmiş Asistanı</h1>
+      <div class="header-actions">
+        <span id="save-indicator" class="save-indicator" aria-live="polite">Kaydedildi</span>
+        <button id="btn-theme" class="btn btn-ghost" aria-label="Tema değiştir (Ctrl+Shift+T)">🌙</button>
+        <button id="btn-drafts" class="btn btn-ghost">Taslaklar</button>
+        <button id="btn-ai" class="btn btn-primary">✨ AI Özet</button>
+        <button id="btn-export" class="btn btn-primary">İndir ▾</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" role="main">
+    <form id="cv-form" class="cv-form" autocomplete="off">
+
+      <!-- FOTOĞRAF & KİŞİSEL -->
+      <section class="card" aria-labelledby="s-personal">
+        <h2 id="s-personal" class="section-title">Kişisel Bilgiler</h2>
+        <div class="personal-grid">
+          <div class="photo-block">
+            <div id="photo-preview" class="photo-preview" role="img" aria-label="Profil fotoğrafı önizlemesi">
+              <span class="photo-placeholder">Fotoğraf yok</span>
+            </div>
+            <button type="button" id="btn-photo" class="btn btn-secondary">Fotoğraf Seç</button>
+            <button type="button" id="btn-photo-clear" class="btn btn-ghost btn-sm">Kaldır</button>
+          </div>
+          <div class="fields-grid">
+            <label class="field"><span>Ad Soyad *</span><input type="text" id="f-name" required autocomplete="name" /></label>
+            <label class="field"><span>Mesleki Unvan</span><input type="text" id="f-title" placeholder="Örn: Kıdemli Yazılım Geliştirici" /></label>
+            <label class="field"><span>E-posta</span><input type="email" id="f-email" autocomplete="email" /></label>
+            <label class="field"><span>Telefon</span><input type="tel" id="f-phone" autocomplete="tel" /></label>
+            <label class="field"><span>LinkedIn</span><input type="url" id="f-linkedin" placeholder="https://linkedin.com/in/..." /></label>
+            <label class="field"><span>Website / GitHub</span><input type="url" id="f-website" placeholder="https://..." /></label>
+            <label class="field field-wide"><span>Şehir / Ülke</span><input type="text" id="f-city" /></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ÖZET -->
+      <section class="card" aria-labelledby="s-summary">
+        <div class="section-header">
+          <h2 id="s-summary" class="section-title">Profesyonel Özet</h2>
+          <button type="button" id="btn-ai-inline" class="btn btn-secondary btn-sm">✨ AI ile Oluştur</button>
+        </div>
+        <label class="field">
+          <span class="sr-only">Özet metni</span>
+          <textarea id="f-summary" rows="5" placeholder="Kariyer özetiniz — AI ile otomatik doldurabilirsiniz."></textarea>
+        </label>
+      </section>
+
+      <!-- DENEYİM -->
+      <section class="card" aria-labelledby="s-exp">
+        <div class="section-header">
+          <h2 id="s-exp" class="section-title">İş Deneyimi</h2>
+          <button type="button" id="btn-add-exp" class="btn btn-secondary btn-sm">+ Deneyim Ekle</button>
+        </div>
+        <div id="exp-list" class="entries-list" aria-label="İş deneyimi listesi"></div>
+        <p class="hint">İpucu: Bir bloğa odaklanıp Delete tuşuyla silebilirsiniz.</p>
+      </section>
+
+      <!-- EĞİTİM -->
+      <section class="card" aria-labelledby="s-edu">
+        <div class="section-header">
+          <h2 id="s-edu" class="section-title">Eğitim</h2>
+          <button type="button" id="btn-add-edu" class="btn btn-secondary btn-sm">+ Eğitim Ekle</button>
+        </div>
+        <div id="edu-list" class="entries-list" aria-label="Eğitim listesi"></div>
+      </section>
+
+      <!-- BECERİLER -->
+      <section class="card" aria-labelledby="s-skills">
+        <h2 id="s-skills" class="section-title">Beceriler</h2>
+        <label class="field">
+          <span>Beceriler (virgülle ayırın)</span>
+          <input type="text" id="f-skills" placeholder="JavaScript, Proje Yönetimi, İletişim, ..." />
+        </label>
+        <div id="skills-preview" class="chips" aria-live="polite"></div>
+      </section>
+
+      <!-- DİLLER -->
+      <section class="card" aria-labelledby="s-langs">
+        <div class="section-header">
+          <h2 id="s-langs" class="section-title">Diller</h2>
+          <button type="button" id="btn-add-lang" class="btn btn-secondary btn-sm">+ Dil Ekle</button>
+        </div>
+        <div id="lang-list" class="entries-list" aria-label="Dil listesi"></div>
+      </section>
+
+    </form>
+  </main>
+
+  <!-- DIALOG'LAR -->
+  <dialog id="dlg-drafts" class="dialog" aria-labelledby="dlg-drafts-title">
+    <h2 id="dlg-drafts-title">Taslaklarım</h2>
+    <div class="dialog-body">
+      <div class="draft-actions">
+        <input type="text" id="draft-name" placeholder="Yeni taslak adı" />
+        <button type="button" id="btn-save-draft" class="btn btn-primary">Mevcut CV'yi Taslağa Kaydet</button>
+      </div>
+      <ul id="drafts-list" class="drafts-list" role="list"></ul>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-ghost" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-export" class="dialog" aria-labelledby="dlg-export-title">
+    <h2 id="dlg-export-title">Dışa Aktar</h2>
+    <div class="dialog-body">
+      <div class="template-picker" role="radiogroup" aria-label="Şablon seçin">
+        <label class="template-option">
+          <input type="radio" name="tpl" value="modern" checked />
+          <div class="template-card"><strong>Modern</strong><small>Renkli başlık şeridi</small></div>
+        </label>
+        <label class="template-option">
+          <input type="radio" name="tpl" value="classic" />
+          <div class="template-card"><strong>Klasik</strong><small>Geleneksel, siyah-beyaz</small></div>
+        </label>
+        <label class="template-option">
+          <input type="radio" name="tpl" value="minimal" />
+          <div class="template-card"><strong>Minimal</strong><small>Sade, çok boşluklu</small></div>
+        </label>
+      </div>
+      <div class="export-buttons">
+        <button type="button" id="btn-export-pdf" class="btn btn-primary">📄 PDF İndir</button>
+        <button type="button" id="btn-export-docx" class="btn btn-primary">📝 Word İndir</button>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-ghost" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-ai" class="dialog" aria-labelledby="dlg-ai-title">
+    <h2 id="dlg-ai-title">AI Ayarları</h2>
+    <div class="dialog-body">
+      <p>Lovable AI Gateway anahtarınızı girin. Anahtar cihazınızda güvenle saklanır ve dışarı gönderilmez.</p>
+      <label class="field">
+        <span>Lovable API Anahtarı</span>
+        <input type="password" id="ai-key" placeholder="sk-..." />
+      </label>
+      <label class="field">
+        <span>Model</span>
+        <select id="ai-model">
+          <option value="google/gemini-2.5-flash">Gemini 2.5 Flash (Önerilen)</option>
+          <option value="google/gemini-2.5-pro">Gemini 2.5 Pro (Daha kaliteli)</option>
+          <option value="openai/gpt-5-mini">GPT-5 mini</option>
+          <option value="openai/gpt-5">GPT-5</option>
+        </select>
+      </label>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" id="btn-save-ai" class="btn btn-primary">Kaydet</button>
+      <button type="button" class="btn btn-ghost" data-close>İptal</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-help" class="dialog" aria-labelledby="dlg-help-title">
+    <h2 id="dlg-help-title">Kısayollar</h2>
+    <ul class="help-list">
+      <li><kbd>Ctrl+S</kbd> — PDF olarak kaydet</li>
+      <li><kbd>Ctrl+Shift+S</kbd> — Word olarak kaydet</li>
+      <li><kbd>Ctrl+O</kbd> — PDF'den içe aktar</li>
+      <li><kbd>Ctrl+G</kbd> — AI ile özet oluştur</li>
+      <li><kbd>Ctrl+D</kbd> — Metinleri madde işaretli yap</li>
+      <li><kbd>Ctrl+N</kbd> — Yeni taslak</li>
+      <li><kbd>Ctrl+T</kbd> — Taslakları yönet</li>
+      <li><kbd>Ctrl+Shift+T</kbd> — Tema değiştir</li>
+      <li><kbd>F1</kbd> — Bu yardım</li>
+      <li><kbd>F7</kbd> — Erişilebilirlik denetimi</li>
+      <li><kbd>Delete</kbd> — Odaklanılan bloğu sil</li>
+    </ul>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-primary" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-check" class="dialog" aria-labelledby="dlg-check-title">
+    <h2 id="dlg-check-title">Denetim Raporu</h2>
+    <ul id="check-list" class="help-list" aria-live="polite"></ul>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-primary" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
