@@ -637,28 +637,22 @@ function autofix() {
   live('Metinler madde işaretli hale getirildi.');
 }
 
-// ============= PDF İÇE AKTAR (basit isim çıkarma) =============
+// ============= PDF İÇE AKTAR =============
 async function importPDF() {
-  const b64 = await window.api.openPdf();
-  if (!b64) return;
-  // pdfjs ile parse — minimal: ilk metin satırından ad tahmini
-  try {
-    const pdfjsLib = await import('../node_modules/pdfjs-dist/build/pdf.mjs');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '../node_modules/pdfjs-dist/build/pdf.worker.mjs';
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-    const page = await pdf.getPage(1);
-    const text = await page.getTextContent();
-    const lines = text.items.map(i => i.str).filter(s => s.trim());
-    if (lines.length) {
-      state.form.name = state.form.name || lines[0];
-      if (lines[1]) state.form.title = state.form.title || lines[1];
-      $('#f-name').value = state.form.name;
-      $('#f-title').value = state.form.title;
-      autosave();
-      live('PDF\'den kimlik bilgileri çekildi.');
-    }
-  } catch (e) {
-    alert('PDF okuma hatası: ' + e.message);
-  }
+  const result = await window.api.extractPdfText();
+  if (!result) return;
+  if (result.error) { alert('PDF okuma hatası: ' + result.error); return; }
+  const lines = result.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) { alert('PDF\'de metin bulunamadı.'); return; }
+  state.form.name = state.form.name || lines[0];
+  if (lines[1]) state.form.title = state.form.title || lines[1];
+  const emailMatch = result.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+  if (emailMatch) state.form.email = state.form.email || emailMatch[0];
+  const phoneMatch = result.match(/(\+?\d[\d\s\-()]{8,})/);
+  if (phoneMatch) state.form.phone = state.form.phone || phoneMatch[0].trim();
+  const liMatch = result.match(/https?:\/\/(?:www\.)?linkedin\.com\/[^\s]+/i);
+  if (liMatch) state.form.linkedin = state.form.linkedin || liMatch[0];
+  ['name','title','email','phone','linkedin'].forEach(k => { $(`#f-${k}`).value = state.form[k] || ''; });
+  autosave();
+  live('PDF\'den bilgiler çekildi.');
 }
