@@ -1,0 +1,22 @@
+{
+  "name": "ozgecmis-asistani",
+  "version": "3.0.0",
+  "description": "Profesyonel Erişilebilir Öz Geçmiş Asistanı",
+  "main": "main.cjs",
+  "author": "CV Asistanı",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-packager . \"OzgecmisAsistani\" --platform=win32 --arch=x64 --out=dist --overwrite --icon=build/icon.ico --app-version=3.0.0 --ignore=\"^/dist\" --ignore=\"^/build/scripts\""
+  },
+  "dependencies": {
+    "docx": "^9.0.2",
+    "electron-store": "^8.2.0",
+    "jspdf": "^2.5.2",
+    "pdfjs-dist": "^4.0.379"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^33.2.1"
+  }
+}
