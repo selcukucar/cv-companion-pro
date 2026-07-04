@@ -1,0 +1,14 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('api', {
+  store: {
+    get: (k) => ipcRenderer.invoke('store:get', k),
+    set: (k, v) => ipcRenderer.invoke('store:set', k, v),
+    delete: (k) => ipcRenderer.invoke('store:delete', k),
+  },
+  openImage: () => ipcRenderer.invoke('dialog:openImage'),
+  openPdf: () => ipcRenderer.invoke('dialog:openPdf'),
+  save: (opts) => ipcRenderer.invoke('dialog:save', opts),
+  aiGenerate: (opts) => ipcRenderer.invoke('ai:generate', opts),
+  onMenu: (event, cb) => ipcRenderer.on(`menu:${event}`, cb),
+});
