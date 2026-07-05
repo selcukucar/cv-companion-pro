@@ -36,8 +36,8 @@ Profesyonel, erişilebilir ve tamamen çevrimdışı çalışan masaüstü CV (�
 ### Kaynak Koddan Çalıştır
 
 ```bash
-git clone https://github.com/<KULLANICI_ADI>/<REPO_ADI>.git
-cd <REPO_ADI>/electron-app
+git clone https://github.com/selcukucar/cv-companion-pro.git
+cd cv-companion-pro/electron-app
 npm install
 npm start
 ```
