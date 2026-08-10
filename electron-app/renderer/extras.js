@@ -136,15 +136,29 @@ window.openATS = function openATS() {
 };
 
 // ---------- İş İlanı Eşleştirme (F9) ----------
-const STOPWORDS = new Set(['ve','ile','için','olan','olarak','bir','bu','da','de','en','veya','gibi','the','and','for','with','you','your','our','are','will','have','that','from','job','iş','ilan','tercihen','arıyoruz','aday','deneyim','deneyimi','sahip','bilgisi','tecrübe','çalışma','yetkinlik']);
+const STOPWORDS = new Set(['ve','ile','için','olan','olarak','bir','bu','da','de','en','veya','gibi','the','and','for','with','you','your','our','are','will','have','that','from','job','iş','ilan','ilanı','tercihen','arıyoruz','aradığımız','aranır','aranan','aramaktayız','aday','adaylar','adayların','deneyim','deneyimi','deneyime','sahip','bilgi','bilgisi','bilgisine','bilgisiyle','tecrübe','tecrübeli','çalışma','çalışacak','yetkinlik','yetkinlikler','olmalı','olması','olmak','gerekli','gereklidir','ayrıca','tüm','her','çok','daha','beklentiler','nitelikler','sorumluluklar','pozisyon','pozisyonu','şirket','şirketimiz','ekip','ekibimiz','ekibine','katılacak','tarafından','konusunda','üzerinde','hakkında','ability','skills','experience','years','team','work','working','role','plus','strong','good']);
+
+// Türkçe eklerin ayıklanması için kaba bir kök bulucu: "typescript'e" → "typescript"
+function stripSuffix(w) {
+  return w.replace(/(lerimiz|larımız|lerinde|larında|lerine|larına|leri|ları|lerde|larda|lere|lara|lerin|ların|imiz|ımız|iniz|ınız|siz|sız|de|da|te|ta|den|dan|ten|tan|ye|ya|le|la|nin|nın|nun|nün|in|ın|un|ün|si|sı|i|ı|e|a)$/u, '');
+}
 
 function tokenize(text) {
-  return (text || '').toLowerCase()
+  const out = [];
+  (text || '').toLowerCase()
+    .replace(/[’']/g, ' ')
     .replace(/[^\p{L}\p{N}+#.\s]/gu, ' ')
     .split(/\s+/)
-    .map(w => w.replace(/^\.+|\.+$/g, ''))
-    .filter(w => w.length > 2 && !STOPWORDS.has(w));
+    .forEach(raw => {
+      const w = raw.replace(/^\.+|\.+$/g, '');
+      if (w.length < 3 || STOPWORDS.has(w)) return;
+      // ".net", "c#", "c++" gibi teknik terimler olduğu gibi kalır
+      const keep = /[+#.]/.test(w) ? w : (stripSuffix(w).length >= 3 ? stripSuffix(w) : w);
+      if (!STOPWORDS.has(keep)) out.push(keep);
+    });
+  return out;
 }
+
 
 function runJobMatch() {
   const posting = $('#job-text').value.trim();
