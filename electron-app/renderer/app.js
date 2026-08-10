@@ -200,7 +200,9 @@ function bindForm() {
       autosave();
     });
     el.addEventListener('blur', () => validateField(k, el));
+    if (VALIDATED_KEYS.includes(k)) errorBox(k, el);
   }
+
   const rr = $('#f-ref-request');
   if (rr) rr.addEventListener('change', () => { state.form.refRequest = rr.checked; autosave(); });
   formBound = true;
