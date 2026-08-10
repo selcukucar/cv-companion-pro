@@ -153,7 +153,7 @@ export function formatCvText(input: string): FormatResult {
   let text = (input || "").replace(/\r\n/g, "\n");
 
   const beforeBullets = text;
-  text = text.replace(/^[\s]*[*•·–—]\s+/gm, "- ");
+  text = text.replace(/^[ \t]*[*•·–—][ \t]+/gm, "- ");
   if (text !== beforeBullets) changes.push("Madde işaretleri tek biçime (\"- \") getirildi.");
 
   const beforeSpaces = text;
