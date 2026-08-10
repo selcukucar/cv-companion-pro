@@ -299,7 +299,12 @@ function createEntry({ type, data, fields, arrKey, index, total }) {
       renameTimer = setTimeout(() => {
         const s = entrySummary(arrKey, data);
         t.textContent = `${type} ${index + 1}${s ? ' — ' + s : ''}`;
+        // Ekran okuyucu blok başlığını da güncel tut
+        el.setAttribute('aria-label',
+          `${type} ${index + 1} / ${total}${s ? ': ' + s : ' (boş)'}. Silmek için Delete, taşımak için Alt ile yukarı veya aşağı ok.`);
+        updateProgress();
       }, 500);
+
     });
     label.appendChild(input);
     grid.appendChild(label);
