@@ -3,18 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Öz Geçmiş Asistanı v4.0</title>
+  <title>Öz Geçmiş Asistanı v4.1</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <a href="#main-content" class="skip-link">İçeriğe atla</a>
+  <a href="#s-exp" class="skip-link">İş deneyimine atla</a>
   <div id="live-region" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+  <div id="live-region-assertive" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+  <div id="toast-area" class="toast-area" aria-hidden="false"></div>
 
   <header class="app-header" role="banner">
     <div class="header-inner">
-      <h1 class="app-title">Öz Geçmiş Asistanı <span class="version-badge">v4.0</span></h1>
+      <h1 class="app-title">Öz Geçmiş Asistanı <span class="version-badge">v4.1</span></h1>
       <div class="header-actions">
-        <span id="save-indicator" class="save-indicator" aria-live="polite">Kaydedildi</span>
+        <div id="progress-meter" class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="CV doluluk oranı">
+          <span id="progress-bar" class="progress-bar"></span>
+          <span id="progress-label" class="progress-label">0%</span>
+        </div>
+        <span id="save-indicator" class="save-indicator" role="status" aria-live="polite">Kaydedildi</span>
+        <button id="btn-plain" class="btn btn-ghost" aria-label="Ekran okuyucu önizlemesi (F4)" title="Ekran okuyucu önizlemesi (F4)">🔊</button>
+        <button id="btn-ats" class="btn btn-ghost" aria-label="ATS uyum puanı (F8)" title="ATS uyum puanı (F8)">📊</button>
+        <button id="btn-jobmatch" class="btn btn-ghost" aria-label="İş ilanı eşleştirme (F9)" title="İş ilanı eşleştirme (F9)">🎯</button>
+        <button id="btn-cover" class="btn btn-ghost" aria-label="Ön yazı oluştur (F10)" title="Ön yazı oluştur (F10)">✉️</button>
         <button id="btn-help" class="btn btn-ghost" aria-label="Kullanım Kılavuzu (F1)" title="Kullanım Kılavuzu (F1)">❓</button>
         <button id="btn-theme" class="btn btn-ghost" aria-label="Tema değiştir (Ctrl+Shift+T)" title="Tema (Ctrl+Shift+T)">🌙</button>
         <button id="btn-drafts" class="btn btn-ghost">Taslaklar</button>
@@ -23,6 +34,7 @@
       </div>
     </div>
   </header>
+
 
   <main id="main-content" class="app-main" role="main">
     <form id="cv-form" class="cv-form" autocomplete="off">
@@ -188,8 +200,10 @@
       <div class="export-buttons">
         <button type="button" id="btn-export-pdf" class="btn btn-primary">📄 PDF İndir</button>
         <button type="button" id="btn-export-docx" class="btn btn-primary">📝 Word İndir</button>
+        <button type="button" id="btn-export-txt" class="btn btn-secondary">🔤 Düz Metin (ATS)</button>
       </div>
-      <p class="hint" style="margin-top:12px;">PDF, Türkçe karakterleri ve gelişmiş tipografiyi tam destekler.</p>
+      <p class="hint" style="margin-top:12px;">PDF, Türkçe karakterleri ve gelişmiş tipografiyi tam destekler. Düz metin çıktısı, başvuru formlarına yapıştırmak ve ATS taramaları için idealdir.</p>
+
     </div>
     <div class="dialog-footer">
       <button type="button" class="btn btn-ghost" data-close>Kapat</button>
@@ -240,17 +254,26 @@
     <ul class="help-list">
       <li><kbd>Ctrl+S</kbd> — PDF olarak kaydet</li>
       <li><kbd>Ctrl+Shift+S</kbd> — Word olarak kaydet</li>
+      <li><kbd>Ctrl+Shift+X</kbd> — Düz metin (ATS) olarak kaydet</li>
       <li><kbd>Ctrl+O</kbd> — PDF'den bilgi çek</li>
       <li><kbd>Ctrl+G</kbd> — AI ile özet oluştur</li>
-      <li><kbd>Ctrl+D</kbd> — Metinleri madde işaretli yap</li>
+      <li><kbd>Ctrl+D</kbd> — Metinleri otomatik düzenle</li>
       <li><kbd>Ctrl+N</kbd> — Yeni taslak</li>
       <li><kbd>Ctrl+T</kbd> — Taslakları yönet</li>
+      <li><kbd>Ctrl+Z</kbd> — Silme/ekleme işlemini geri al</li>
       <li><kbd>Ctrl+Shift+T</kbd> — Tema değiştir</li>
       <li><kbd>Ctrl+=</kbd> / <kbd>Ctrl+-</kbd> — Yazı boyutu büyüt/küçült</li>
       <li><kbd>F1</kbd> — Kullanım kılavuzu</li>
       <li><kbd>F2</kbd> — Kısayollar</li>
-      <li><kbd>F7</kbd> — Erişilebilirlik denetimi</li>
+      <li><kbd>F3</kbd> — Bölüm gezgini</li>
+      <li><kbd>F4</kbd> — Ekran okuyucu önizlemesi</li>
+      <li><kbd>F7</kbd> — İçerik denetimi</li>
+      <li><kbd>F8</kbd> — ATS uyum puanı</li>
+      <li><kbd>F9</kbd> — İş ilanı eşleştirme</li>
+      <li><kbd>F10</kbd> — Ön yazı oluştur</li>
+      <li><kbd>Alt+1</kbd> … <kbd>Alt+9</kbd> — Bölümlere hızlı geçiş</li>
       <li><kbd>Delete</kbd> — Odaklanılan bloğu sil</li>
+      <li><kbd>Alt+↑</kbd> / <kbd>Alt+↓</kbd> — Odaklanılan bloğu taşı</li>
       <li><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> — Alanlar arası gezinme</li>
     </ul>
     <div class="dialog-footer">
@@ -260,8 +283,92 @@
 
   <dialog id="dlg-check" class="dialog" aria-labelledby="dlg-check-title">
     <h2 id="dlg-check-title">Denetim Raporu</h2>
-    <ul id="check-list" class="help-list" aria-live="polite"></ul>
+    <ul id="check-list" class="help-list" tabindex="0" aria-live="polite"></ul>
     <div class="dialog-footer">
+      <button type="button" class="btn btn-primary" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-sections" class="dialog" aria-labelledby="dlg-sections-title">
+    <h2 id="dlg-sections-title">Bölüm Gezgini</h2>
+    <div class="dialog-body">
+      <p class="hint">Gitmek istediğiniz bölümü seçin. Alt tuşu ile 1-9 arası sayılar da aynı işi yapar.</p>
+      <div id="sections-list" class="sections-grid" role="group" aria-label="CV bölümleri"></div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-ghost" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-plain" class="dialog dialog-lg" aria-labelledby="dlg-plain-title">
+    <h2 id="dlg-plain-title">Ekran Okuyucu Önizlemesi</h2>
+    <div class="dialog-body">
+      <p id="plain-stats" class="hint" role="status" aria-live="polite"></p>
+      <pre id="plain-content" class="plain-view" tabindex="0" role="document"
+           aria-label="CV'nizin düz metin hâli, ekran okuyucu ile baştan sona okunabilir"></pre>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" id="btn-plain-copy" class="btn btn-secondary">Panoya Kopyala</button>
+      <button type="button" id="btn-plain-txt" class="btn btn-secondary">TXT Kaydet</button>
+      <button type="button" class="btn btn-primary" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-ats" class="dialog" aria-labelledby="dlg-ats-title">
+    <h2 id="dlg-ats-title">ATS Uyum Puanı</h2>
+    <div class="dialog-body">
+      <p id="ats-score" class="ats-score" tabindex="-1" role="status" aria-live="polite"></p>
+      <div id="ats-meter" class="progress progress-lg" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="ATS uyum puanı">
+        <span id="ats-bar" class="progress-bar"></span>
+      </div>
+      <ul id="ats-list" class="help-list" tabindex="0" aria-label="ATS değerlendirme maddeleri"></ul>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-primary" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-jobmatch" class="dialog dialog-lg" aria-labelledby="dlg-jobmatch-title">
+    <h2 id="dlg-jobmatch-title">İş İlanı Eşleştirme</h2>
+    <div class="dialog-body">
+      <label class="field">
+        <span>İş ilanı metnini buraya yapıştırın</span>
+        <textarea id="job-text" rows="7" placeholder="İlanın tamamını kopyalayıp yapıştırın..."></textarea>
+      </label>
+      <div class="export-buttons">
+        <button type="button" id="btn-job-run" class="btn btn-primary">Analiz Et</button>
+        <button type="button" id="btn-job-ai" class="btn btn-secondary">✨ Özeti İlana Göre Uyarla</button>
+      </div>
+      <p id="job-score" class="ats-score" role="status" aria-live="polite"></p>
+      <h3 class="section-title">CV'nizde bulunan anahtar kelimeler</h3>
+      <div id="job-matched" class="chips"></div>
+      <h3 class="section-title">Eksik anahtar kelimeler</h3>
+      <div id="job-missing" class="chips" aria-hidden="true"></div>
+      <p id="job-missing-text" class="sr-only" role="status" aria-live="polite"></p>
+      <p class="hint">Eksik kelimeleri, gerçekten sahip olduğunuz beceri ve deneyimlerse Beceriler ya da görev açıklamalarına ekleyin.</p>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-primary" data-close>Kapat</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-cover" class="dialog dialog-lg" aria-labelledby="dlg-cover-title">
+    <h2 id="dlg-cover-title">Ön Yazı (Niyet Mektubu)</h2>
+    <div class="dialog-body">
+      <label class="field"><span>Şirket adı *</span><input type="text" id="cover-company" /></label>
+      <label class="field"><span>Pozisyon *</span><input type="text" id="cover-position" /></label>
+      <label class="field"><span>Vurgulanmasını istediğiniz notlar (opsiyonel)</span><input type="text" id="cover-notes" placeholder="Örn: uzaktan çalışma deneyimi" /></label>
+      <div class="export-buttons">
+        <button type="button" id="btn-cover-generate" class="btn btn-primary">✨ Ön Yazı Oluştur</button>
+      </div>
+      <label class="field">
+        <span>Ön yazı metni (düzenleyebilirsiniz)</span>
+        <textarea id="cover-output" rows="12"></textarea>
+      </label>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" id="btn-cover-copy" class="btn btn-secondary">Panoya Kopyala</button>
+      <button type="button" id="btn-cover-save" class="btn btn-secondary">TXT Kaydet</button>
       <button type="button" class="btn btn-primary" data-close>Kapat</button>
     </div>
   </dialog>
@@ -269,5 +376,7 @@
   <script src="../node_modules/docx/dist/index.umd.cjs"></script>
   <script src="manual.js"></script>
   <script src="app.js"></script>
+  <script src="extras.js"></script>
 </body>
 </html>
+
