@@ -32,13 +32,40 @@ const state = {
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
-const live = (msg) => { $('#live-region').textContent = msg; };
 const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = (s) => (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const txt = (v) => (v == null ? '' : String(v));
+
+// Ekran okuyucu duyuruları: polite (varsayılan) ve assertive (hata/uyarı) kanalları.
+// İçerik önce boşaltılır, böylece aynı mesaj tekrar okunur.
+function live(msg, assertive = false) {
+  const region = $(assertive ? '#live-region-assertive' : '#live-region');
+  if (!region) return;
+  region.textContent = '';
+  setTimeout(() => { region.textContent = msg; }, 30);
+}
+
+// Görsel + işitsel bildirim (alert kesintisi olmadan)
+function notify(msg, kind = 'info') {
+  const wrap = $('#toast-area');
+  if (wrap) {
+    const t = document.createElement('div');
+    t.className = 'toast toast-' + kind;
+    t.textContent = msg;
+    wrap.appendChild(t);
+    setTimeout(() => t.remove(), 6000);
+  }
+  live(msg, kind === 'error' || kind === 'warn');
+}
+function fail(msg) { notify(msg, 'error'); }
 
 // ============= BAŞLATMA =============
 window.addEventListener('DOMContentLoaded', async () => {
-  await loadFromStore();
+  try {
+    await loadFromStore();
+  } catch (e) {
+    fail('Kayıtlı veriler okunamadı, boş formla başlatıldı. (' + e.message + ')');
+  }
   applyTheme(state.settings.theme);
   applyFontScale(state.settings.fontScale);
   bindForm();
@@ -46,13 +73,52 @@ window.addEventListener('DOMContentLoaded', async () => {
   bindMenu();
   renderAll();
   $('#f-name').focus();
-  live('Uygulama hazır. F1 tuşu ile kullanım kılavuzunu açabilirsiniz.');
+  live('Öz Geçmiş Asistanı hazır. F1 kullanım kılavuzu, F2 kısayollar, F4 ekran okuyucu önizlemesi.');
 });
 
+// Sessiz çökmeleri engelle: her hata kullanıcıya duyurulur.
+window.addEventListener('error', (e) => fail('Beklenmeyen hata: ' + (e.message || 'bilinmiyor')));
+window.addEventListener('unhandledrejection', (e) => fail('İşlem tamamlanamadı: ' + (e.reason?.message || e.reason || 'bilinmiyor')));
+
 function renderAll() {
+  const active = document.activeElement;
+  const focusKey = active && active.closest?.('.entry')
+    ? { id: active.closest('.entry').dataset.id, field: active.dataset?.fieldKey || null }
+    : null;
   renderExperiences(); renderEducations(); renderCertifications();
   renderProjects(); renderAwards(); renderVolunteers();
   renderLanguages(); renderReferences(); renderSkillsPreview();
+  updateProgress();
+  if (focusKey) restoreFocus(focusKey);
+}
+
+function restoreFocus({ id, field }) {
+  const block = document.querySelector(`.entry[data-id="${id}"]`);
+  if (!block) return;
+  const target = (field && block.querySelector(`[data-field-key="${field}"]`)) || block;
+  target.focus({ preventScroll: false });
+}
+
+// CV doluluk oranı — ekran okuyucular için de duyurulur
+function completeness() {
+  const f = state.form;
+  const checks = [
+    !!f.name?.trim(), !!f.title?.trim(), !!f.email?.trim(), !!f.phone?.trim(), !!f.city?.trim(),
+    (f.summary || '').length > 60, (f.skills || '').split(',').filter(s => s.trim()).length >= 3,
+    state.experiences.length > 0, state.educations.length > 0, state.languages.length > 0,
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+}
+function updateProgress() {
+  const pct = completeness();
+  const bar = $('#progress-bar');
+  const label = $('#progress-label');
+  if (bar) {
+    bar.style.width = pct + '%';
+    const box = $('#progress-meter');
+    if (box) { box.setAttribute('aria-valuenow', String(pct)); box.setAttribute('aria-valuetext', `CV doluluk oranı yüzde ${pct}`); }
+  }
+  if (label) label.textContent = pct + '%';
 }
 
 async function loadFromStore() {
@@ -68,28 +134,70 @@ async function loadFromStore() {
 }
 
 // ============= FORM =============
+const FORM_KEYS = ['name','title','email','phone','linkedin','website','city','birthdate','nationality',
+  'military','driver','marital','summary','skills','hobbies'];
+let formBound = false;
+
+function validateField(k, el) {
+  let error = '';
+  const v = (el.value || '').trim();
+  if (v) {
+    if (k === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) error = 'Geçerli bir e-posta adresi girin. Örnek: ad@ornek.com';
+    if ((k === 'linkedin' || k === 'website') && !/^https?:\/\//i.test(v)) error = 'Adres "https://" ile başlamalıdır.';
+  }
+  const msgId = `err-${k}`;
+  let msg = document.getElementById(msgId);
+  if (error) {
+    if (!msg) {
+      msg = document.createElement('small');
+      msg.id = msgId; msg.className = 'field-error'; msg.setAttribute('role', 'alert');
+      el.parentElement.appendChild(msg);
+    }
+    msg.textContent = error;
+    el.setAttribute('aria-invalid', 'true');
+    el.setAttribute('aria-describedby', msgId);
+  } else {
+    if (msg) msg.remove();
+    el.removeAttribute('aria-invalid');
+    el.removeAttribute('aria-describedby');
+  }
+}
+
+function syncFormInputs() {
+  for (const k of FORM_KEYS) {
+    const el = $(`#f-${k}`);
+    if (el) el.value = state.form[k] || '';
+  }
+  const rr = $('#f-ref-request');
+  if (rr) rr.checked = !!state.form.refRequest;
+  if (state.photo) setPhoto(state.photo); else resetPhoto();
+  renderSkillsPreview();
+  updateProgress();
+}
+
 function bindForm() {
-  const map = ['name','title','email','phone','linkedin','website','city','birthdate','nationality',
-    'military','driver','marital','summary','skills','hobbies'];
-  for (const k of map) {
+  if (formBound) { syncFormInputs(); return; }
+  for (const k of FORM_KEYS) {
     const el = $(`#f-${k}`);
     if (!el) continue;
-    el.value = state.form[k] || '';
     el.addEventListener('input', () => {
       state.form[k] = el.value;
       if (k === 'skills') renderSkillsPreview();
+      updateProgress();
       autosave();
     });
+    el.addEventListener('blur', () => validateField(k, el));
   }
   const rr = $('#f-ref-request');
-  rr.checked = !!state.form.refRequest;
-  rr.addEventListener('change', () => { state.form.refRequest = rr.checked; autosave(); });
-  if (state.photo) setPhoto(state.photo);
+  if (rr) rr.addEventListener('change', () => { state.form.refRequest = rr.checked; autosave(); });
+  formBound = true;
+  syncFormInputs();
 }
 
 function renderSkillsPreview() {
-  const wrap = $('#skills-preview'); wrap.innerHTML = '';
-  state.form.skills.split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
+  const wrap = $('#skills-preview'); if (!wrap) return;
+  wrap.innerHTML = '';
+  txt(state.form.skills).split(',').map(s => s.trim()).filter(Boolean).forEach(s => {
     const c = document.createElement('span'); c.className = 'chip'; c.textContent = s;
     wrap.appendChild(c);
   });
@@ -102,31 +210,58 @@ function setPhoto(dataUrl) {
   img.src = dataUrl; img.alt = 'Profil fotoğrafı';
   p.appendChild(img);
 }
+function resetPhoto() {
+  state.photo = null;
+  const p = $('#photo-preview');
+  if (p) p.innerHTML = '<span class="photo-placeholder">Fotoğraf yok</span>';
+}
 
 // ============= DİNAMİK BLOKLAR =============
-function createEntry({ type, data, fields, arrKey }) {
+function entrySummary(arrKey, data) {
+  const pick = (...keys) => keys.map(k => txt(data[k]).trim()).filter(Boolean).join(', ');
+  switch (arrKey) {
+    case 'experiences': return pick('position', 'company');
+    case 'educations': return pick('school', 'degree');
+    case 'certifications': return pick('name', 'issuer');
+    case 'projects': return pick('name', 'role');
+    case 'awards': return pick('title', 'issuer');
+    case 'volunteers': return pick('org', 'role');
+    case 'languages': return pick('name', 'level');
+    case 'references': return pick('name', 'title');
+    default: return '';
+  }
+}
+
+function createEntry({ type, data, fields, arrKey, index, total }) {
   const el = document.createElement('div');
   el.className = 'entry'; el.tabIndex = 0; el.dataset.id = data.id;
-  el.setAttribute('role', 'group'); el.setAttribute('aria-label', `${type} bloğu`);
+  const summary = entrySummary(arrKey, data);
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label',
+    `${type} ${index + 1} / ${total}${summary ? ': ' + summary : ' (boş)'}. Silmek için Delete, taşımak için Alt ile yukarı veya aşağı ok.`);
 
   const header = document.createElement('div');
   header.className = 'entry-header';
-  header.innerHTML = `<span class="entry-title">${esc(type)}</span>`;
+  const t = document.createElement('span');
+  t.className = 'entry-title';
+  t.textContent = `${type} ${index + 1}${summary ? ' — ' + summary : ''}`;
+  header.appendChild(t);
   const controls = document.createElement('div'); controls.className = 'entry-controls';
 
-  const up = document.createElement('button');
-  up.type = 'button'; up.className = 'btn btn-ghost btn-sm'; up.textContent = '↑';
-  up.setAttribute('aria-label', 'Yukarı taşı');
-  up.addEventListener('click', () => moveEntry(arrKey, data.id, -1));
-  const down = document.createElement('button');
-  down.type = 'button'; down.className = 'btn btn-ghost btn-sm'; down.textContent = '↓';
-  down.setAttribute('aria-label', 'Aşağı taşı');
-  down.addEventListener('click', () => moveEntry(arrKey, data.id, 1));
-  const del = document.createElement('button');
-  del.type = 'button'; del.className = 'btn btn-ghost btn-sm btn-danger'; del.textContent = 'Sil';
-  del.setAttribute('aria-label', `${type} bloğunu sil`);
-  del.addEventListener('click', () => { if (confirm('Bu bloğu silmek istiyor musunuz?')) deleteEntry(arrKey, data.id); });
-  controls.append(up, down, del);
+  const mkBtn = (label, aria, cls, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn-ghost btn-sm' + (cls ? ' ' + cls : '');
+    b.textContent = label; b.setAttribute('aria-label', aria);
+    b.addEventListener('click', fn);
+    return b;
+  };
+
+  controls.append(
+    mkBtn('↑', `${type} ${index + 1}: yukarı taşı`, '', () => moveEntry(arrKey, data.id, -1)),
+    mkBtn('↓', `${type} ${index + 1}: aşağı taşı`, '', () => moveEntry(arrKey, data.id, 1)),
+    mkBtn('⧉', `${type} ${index + 1}: bloğu çoğalt`, '', () => duplicateEntry(arrKey, data.id)),
+    mkBtn('Sil', `${type} ${index + 1}: bloğu sil`, 'btn-danger', () => deleteEntry(arrKey, data.id)),
+  );
   header.appendChild(controls);
   el.appendChild(header);
 
@@ -139,24 +274,62 @@ function createEntry({ type, data, fields, arrKey }) {
     if (!f.textarea) input.type = f.type || 'text';
     if (f.placeholder) input.placeholder = f.placeholder;
     if (f.textarea) input.rows = f.rows || 3;
+    input.dataset.fieldKey = f.key;
     input.value = data[f.key] || '';
-    input.addEventListener('input', () => { data[f.key] = input.value; autosave(); });
+    let renameTimer;
+    input.addEventListener('input', () => {
+      data[f.key] = input.value;
+      autosave();
+      clearTimeout(renameTimer);
+      renameTimer = setTimeout(() => {
+        const s = entrySummary(arrKey, data);
+        t.textContent = `${type} ${index + 1}${s ? ' — ' + s : ''}`;
+      }, 500);
+    });
     label.appendChild(input);
     grid.appendChild(label);
   });
   el.appendChild(grid);
 
   el.addEventListener('keydown', (e) => {
-    if (e.key === 'Delete' && e.target === el) {
-      if (confirm('Bu bloğu silmek istiyor musunuz?')) deleteEntry(arrKey, data.id);
-    }
+    if (e.key === 'Delete' && e.target === el) { deleteEntry(arrKey, data.id); return; }
+    if (e.altKey && e.key === 'ArrowUp') { e.preventDefault(); moveEntry(arrKey, data.id, -1); }
+    if (e.altKey && e.key === 'ArrowDown') { e.preventDefault(); moveEntry(arrKey, data.id, 1); }
   });
   return el;
 }
 
+// Geri alma yığını (Ctrl+Z)
+const undoStack = [];
+function pushUndo(action) { undoStack.push(action); if (undoStack.length > 30) undoStack.shift(); }
+function undoLast() {
+  const a = undoStack.pop();
+  if (!a) { notify('Geri alınacak işlem yok.', 'warn'); return; }
+  a.undo();
+  renderAll(); autosave();
+  notify(a.label + ' geri alındı.');
+}
+
 function deleteEntry(arrKey, id) {
-  state[arrKey] = state[arrKey].filter(e => e.id !== id);
-  renderAll(); autosave(); live('Blok silindi.');
+  const arr = state[arrKey];
+  const i = arr.findIndex(e => e.id === id);
+  if (i < 0) return;
+  const removed = arr[i];
+  arr.splice(i, 1);
+  pushUndo({ label: 'Silme işlemi', undo: () => state[arrKey].splice(i, 0, removed) });
+  renderAll(); autosave();
+  notify('Blok silindi. Geri almak için Ctrl+Z.');
+}
+function duplicateEntry(arrKey, id) {
+  const arr = state[arrKey];
+  const i = arr.findIndex(e => e.id === id);
+  if (i < 0) return;
+  const copy = { ...arr[i], id: uid() };
+  arr.splice(i + 1, 0, copy);
+  pushUndo({ label: 'Çoğaltma', undo: () => { state[arrKey] = state[arrKey].filter(e => e.id !== copy.id); } });
+  renderAll(); autosave();
+  notify('Blok çoğaltıldı.');
+  setTimeout(() => restoreFocus({ id: copy.id, field: null }), 60);
 }
 function moveEntry(arrKey, id, dir) {
   const arr = state[arrKey];
@@ -222,10 +395,18 @@ const FIELDS = {
 };
 
 function renderList(arrKey, listId, type) {
-  const list = $(listId); list.innerHTML = '';
-  state[arrKey].forEach(item =>
-    list.appendChild(createEntry({ type, data: item, fields: FIELDS[arrKey], arrKey }))
+  const list = $(listId); if (!list) return;
+  list.innerHTML = '';
+  const total = state[arrKey].length;
+  list.setAttribute('aria-label', `${type} listesi, ${total} kayıt`);
+  state[arrKey].forEach((item, index) =>
+    list.appendChild(createEntry({ type, data: item, fields: FIELDS[arrKey], arrKey, index, total }))
   );
+  if (!total) {
+    const empty = document.createElement('p');
+    empty.className = 'hint'; empty.textContent = `Henüz ${type.toLowerCase()} kaydı yok.`;
+    list.appendChild(empty);
+  }
 }
 const renderExperiences = () => renderList('experiences', '#exp-list', 'İş Deneyimi');
 const renderEducations = () => renderList('educations', '#edu-list', 'Eğitim');
@@ -239,13 +420,36 @@ const renderReferences = () => renderList('references', '#ref-list', 'Referans')
 // ============= OTOMATIK KAYDET =============
 let saveTimer;
 function autosave() {
-  $('#save-indicator').textContent = 'Yazılıyor...';
+  const ind = $('#save-indicator');
+  if (ind) ind.textContent = 'Yazılıyor...';
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
-    const { settings, ...cvData } = state;
-    await window.api.store.set('cv', cvData);
-    $('#save-indicator').textContent = 'Kaydedildi ✓';
+    try {
+      const { settings, ...cvData } = state;
+      await window.api.store.set('cv', cvData);
+      if (ind) ind.textContent = 'Kaydedildi ✓';
+    } catch (e) {
+      if (ind) ind.textContent = 'Kaydedilemedi!';
+      fail('Otomatik kayıt başarısız: ' + e.message);
+    }
   }, 400);
+}
+
+// ============= DIALOG YÖNETİMİ (odak geri dönüşü) =============
+let lastFocused = null;
+function openDialog(sel, focusSel) {
+  const dlg = $(sel);
+  if (!dlg) return;
+  lastFocused = document.activeElement;
+  dlg.showModal();
+  const target = focusSel ? dlg.querySelector(focusSel) : dlg.querySelector('h2');
+  if (target) {
+    if (!target.hasAttribute('tabindex') && !/^(INPUT|SELECT|TEXTAREA|BUTTON|A)$/.test(target.tagName)) {
+      target.setAttribute('tabindex', '-1');
+    }
+    setTimeout(() => target.focus(), 40);
+  }
+  dlg.addEventListener('close', () => { if (lastFocused?.focus) lastFocused.focus(); }, { once: true });
 }
 
 // ============= BUTONLAR =============
@@ -255,17 +459,21 @@ function bindButtons() {
   $('#btn-drafts').addEventListener('click', openDrafts);
   $('#btn-ai').addEventListener('click', runAI);
   $('#btn-ai-inline').addEventListener('click', runAI);
-  $('#btn-export').addEventListener('click', () => $('#dlg-export').showModal());
+  $('#btn-export').addEventListener('click', () => openDialog('#dlg-export'));
   $('#btn-photo').addEventListener('click', selectPhoto);
   $('#btn-photo-clear').addEventListener('click', () => {
-    state.photo = null;
-    $('#photo-preview').innerHTML = '<span class="photo-placeholder">Fotoğraf yok</span>';
-    autosave();
+    resetPhoto(); autosave(); notify('Fotoğraf kaldırıldı.');
   });
 
-  const addBtn = (id, arrKey, tmpl, msg) => $(id).addEventListener('click', () => {
-    state[arrKey].push({ id: uid(), ...tmpl });
-    renderAll(); autosave(); live(msg);
+  const addBtn = (id, arrKey, tmpl, msg) => $(id)?.addEventListener('click', () => {
+    const item = { id: uid(), ...tmpl };
+    state[arrKey].push(item);
+    pushUndo({ label: 'Ekleme', undo: () => { state[arrKey] = state[arrKey].filter(e => e.id !== item.id); } });
+    renderAll(); autosave(); notify(msg + ' Alanlar odaklandı.');
+    setTimeout(() => {
+      const block = document.querySelector(`.entry[data-id="${item.id}"]`);
+      block?.querySelector('input, textarea')?.focus();
+    }, 60);
   });
   addBtn('#btn-add-exp', 'experiences', { position:'', company:'', location:'', startDate:'', endDate:'', description:'' }, 'İş deneyimi eklendi.');
   addBtn('#btn-add-edu', 'educations', { school:'', degree:'', gpa:'', startDate:'', endDate:'', note:'' }, 'Eğitim eklendi.');
@@ -278,6 +486,7 @@ function bindButtons() {
 
   $('#btn-export-pdf').addEventListener('click', () => { const t = getTemplate(); $('#dlg-export').close(); exportPDF(t); });
   $('#btn-export-docx').addEventListener('click', () => { const t = getTemplate(); $('#dlg-export').close(); exportDOCX(t); });
+  $('#btn-export-txt')?.addEventListener('click', () => { $('#dlg-export').close(); exportTXT(); });
   $('#btn-save-ai').addEventListener('click', saveAISettings);
   $('#btn-save-draft').addEventListener('click', saveDraft);
   $('#btn-manual-print').addEventListener('click', () => window.print());
@@ -287,13 +496,13 @@ function bindButtons() {
 
   $$('[data-close]').forEach(b => b.addEventListener('click', (e) => e.target.closest('dialog').close()));
 }
-const getTemplate = () => document.querySelector('input[name="tpl"]:checked').value;
+const getTemplate = () => document.querySelector('input[name="tpl"]:checked')?.value || 'modern';
 
 async function selectPhoto() {
   const data = await window.api.openImage();
   if (!data) return;
-  if (typeof data === 'object' && data.error) { alert(data.error); return; }
-  setPhoto(data); autosave(); live('Fotoğraf yüklendi.');
+  if (typeof data === 'object' && data.error) { fail(data.error); return; }
+  setPhoto(data); autosave(); notify('Fotoğraf yüklendi.');
 }
 
 // ============= TEMA & YAZI BOYUTU =============
@@ -336,42 +545,57 @@ function updateAIProviderUI() {
   $('#ai-help-text').textContent = AI_HELP[provider];
 }
 
-async function runAI() {
+// Ortak AI çağrısı: anahtar kontrolü, zaman aşımı ve anlaşılır hata mesajı
+async function aiText(prompt, system) {
   if (!state.settings.apiKey) {
-    if (confirm('AI anahtarı ayarlanmamış. Şimdi ayarlamak ister misiniz?')) openAISettings();
+    notify('AI anahtarı ayarlanmamış. Ayarlar penceresi açılıyor.', 'warn');
+    openAISettings();
+    throw new Error('API anahtarı yok.');
+  }
+  const call = window.api.aiGenerate({
+    provider: state.settings.provider,
+    apiKey: state.settings.apiKey,
+    model: state.settings.model,
+    prompt, system,
+  });
+  const timeout = new Promise((_, rej) =>
+    setTimeout(() => rej(new Error('AI yanıtı 60 saniyede gelmedi. Bağlantınızı veya anahtarınızı kontrol edin.')), 60000));
+  const text = await Promise.race([call, timeout]);
+  if (!text || !String(text).trim()) throw new Error('AI boş yanıt döndürdü, tekrar deneyin.');
+  return String(text).trim();
+}
+
+async function runAI() {
+  const { name, title, summary } = state.form;
+  if (!name?.trim() || !title?.trim()) {
+    fail('AI için en az Ad Soyad ve Mesleki Unvan gerekli.');
+    $(!name?.trim() ? '#f-name' : '#f-title').focus();
     return;
   }
-  const { name, title, summary } = state.form;
-  if (!name || !title) { alert('AI için en az Ad Soyad ve Mesleki Unvan gerekli.'); return; }
   const companies = state.experiences.filter(e => e.company).map(e => `${e.position || ''} @ ${e.company}`).join(', ');
-  const skills = state.form.skills;
   const prompt = `Bir kişi için 3-4 cümlelik profesyonel Türkçe CV özeti yaz.
 Ad: ${name}
 Unvan: ${title}
 Deneyim: ${companies || 'Belirtilmemiş'}
-Beceriler: ${skills || 'Belirtilmemiş'}
+Beceriler: ${state.form.skills || 'Belirtilmemiş'}
 ${summary ? 'Mevcut taslak: ' + summary : ''}
 
 Sadece özet metnini döndür, başlık veya açıklama ekleme.`;
 
-  const btn = $('#btn-ai'); btn.disabled = true; btn.textContent = '⏳ Yazılıyor...';
-  live('AI özet oluşturuyor...');
+  const btn = $('#btn-ai'); btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = '⏳ Yazılıyor...';
+  live('AI özet oluşturuyor, lütfen bekleyin.');
   try {
-    const text = await window.api.aiGenerate({
-      provider: state.settings.provider,
-      apiKey: state.settings.apiKey,
-      model: state.settings.model,
-      prompt
-    });
-    state.form.summary = text.trim();
-    $('#f-summary').value = state.form.summary;
+    const text = await aiText(prompt);
+    state.form.summary = text;
+    $('#f-summary').value = text;
+    updateProgress();
     autosave();
-    live('AI özet oluşturuldu.');
+    notify('AI özet oluşturuldu ve Profesyonel Özet alanına yazıldı.');
+    $('#f-summary').focus();
   } catch (e) {
-    alert('AI hatası: ' + e.message);
-    live('AI hatası oluştu.');
+    fail('AI hatası: ' + e.message);
   } finally {
-    btn.disabled = false; btn.textContent = '✨ AI Özet';
+    btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = '✨ AI Özet';
   }
 }
 
@@ -380,27 +604,64 @@ function openAISettings() {
   updateAIProviderUI();
   $('#ai-key').value = state.settings.apiKey || '';
   if (state.settings.model) $('#ai-model').value = state.settings.model;
-  $('#dlg-ai').showModal();
+  openDialog('#dlg-ai', '#ai-provider');
 }
 async function saveAISettings() {
   state.settings.provider = $('#ai-provider').value;
   state.settings.apiKey = $('#ai-key').value.trim();
   state.settings.model = $('#ai-model').value;
-  await window.api.store.set('settings', state.settings);
-  $('#dlg-ai').close();
-  live('AI ayarları kaydedildi.');
+  try {
+    await window.api.store.set('settings', state.settings);
+    $('#dlg-ai').close();
+    notify('AI ayarları kaydedildi.');
+  } catch (e) { fail('Ayarlar kaydedilemedi: ' + e.message); }
 }
 
 // ============= YARDIM =============
 function openHelp() {
   $('#manual-content').innerHTML = window.MANUAL_HTML;
-  $('#dlg-help').showModal();
-  setTimeout(() => $('#manual-content').focus(), 50);
+  openDialog('#dlg-help', '#manual-content');
 }
 
 // ============= TASLAKLAR =============
+const ARRAY_KEYS = ['experiences','educations','certifications','projects','awards','volunteers','languages','references'];
+
+// Gelen veriyi güvenli hale getir: eksik alanlar tamamlanır, bozuk kayıtlar atlanır.
+function normalizeData(raw) {
+  const data = (raw && typeof raw === 'object') ? raw : {};
+  const form = { ...state.form };
+  if (data.form && typeof data.form === 'object') {
+    for (const k of Object.keys(form)) {
+      if (k === 'refRequest') form[k] = !!data.form[k];
+      else if (data.form[k] != null) form[k] = String(data.form[k]);
+    }
+  }
+  const out = { form, photo: typeof data.photo === 'string' ? data.photo : null };
+  for (const k of ARRAY_KEYS) {
+    const arr = Array.isArray(data[k]) ? data[k] : [];
+    out[k] = arr.filter(x => x && typeof x === 'object').map(x => {
+      const item = { id: x.id || uid() };
+      (FIELDS[k] || []).forEach(f => { item[f.key] = x[f.key] != null ? String(x[f.key]) : ''; });
+      return item;
+    });
+  }
+  return out;
+}
+
+function applyLoadedData(raw) {
+  const clean = normalizeData(raw);
+  state.form = clean.form;
+  state.photo = clean.photo;
+  ARRAY_KEYS.forEach(k => { state[k] = clean[k]; });
+  syncFormInputs();
+  renderAll();
+  autosave();
+}
+
 async function openDrafts() {
-  const drafts = (await window.api.store.get('drafts')) || [];
+  let drafts = [];
+  try { drafts = (await window.api.store.get('drafts')) || []; }
+  catch (e) { fail('Taslaklar okunamadı: ' + e.message); }
   const list = $('#drafts-list'); list.innerHTML = '';
   if (!drafts.length) {
     list.innerHTML = '<li style="justify-content:center;color:var(--text-muted)">Henüz taslak yok</li>';
@@ -413,74 +674,145 @@ async function openDrafts() {
       info.append(n, dt); li.appendChild(info);
       const btns = document.createElement('div');
       const load = document.createElement('button'); load.className = 'btn btn-secondary btn-sm'; load.textContent = 'Yükle';
+      load.setAttribute('aria-label', `${d.name} taslağını yükle`);
       load.addEventListener('click', () => loadDraft(d.id));
       const del = document.createElement('button'); del.className = 'btn btn-ghost btn-sm btn-danger'; del.textContent = 'Sil';
+      del.setAttribute('aria-label', `${d.name} taslağını sil`);
       del.addEventListener('click', () => deleteDraft(d.id));
       btns.append(load, del); li.appendChild(btns);
       list.appendChild(li);
     });
   }
-  $('#dlg-drafts').showModal();
+  if (!$('#dlg-drafts').open) openDialog('#dlg-drafts', '#draft-name');
+  live(`Taslak listesi, ${drafts.length} kayıt.`);
 }
 function currentSnapshot() {
   const { settings, ...rest } = state;
   return JSON.parse(JSON.stringify(rest));
 }
 async function saveDraft() {
-  const name = $('#draft-name').value.trim() || `Taslak ${new Date().toLocaleDateString('tr-TR')}`;
-  const drafts = (await window.api.store.get('drafts')) || [];
-  drafts.push({ id: uid(), name, date: Date.now(), data: currentSnapshot() });
-  await window.api.store.set('drafts', drafts);
-  $('#draft-name').value = '';
-  openDrafts();
-  live('Taslak kaydedildi.');
+  try {
+    const name = $('#draft-name').value.trim() || `Taslak ${new Date().toLocaleDateString('tr-TR')}`;
+    const drafts = (await window.api.store.get('drafts')) || [];
+    drafts.push({ id: uid(), name, date: Date.now(), data: currentSnapshot() });
+    await window.api.store.set('drafts', drafts);
+    $('#draft-name').value = '';
+    await openDrafts();
+    notify(`"${name}" taslağı kaydedildi.`);
+  } catch (e) { fail('Taslak kaydedilemedi: ' + e.message); }
 }
 async function loadDraft(id) {
-  const drafts = (await window.api.store.get('drafts')) || [];
-  const d = drafts.find(x => x.id === id);
-  if (!d) return;
-  Object.assign(state, d.data);
-  ['experiences','educations','certifications','projects','awards','volunteers','languages','references']
-    .forEach(k => { if (!Array.isArray(state[k])) state[k] = []; });
-  bindForm(); renderAll();
-  if (state.photo) setPhoto(state.photo); else $('#photo-preview').innerHTML = '<span class="photo-placeholder">Fotoğraf yok</span>';
-  $('#dlg-drafts').close();
-  autosave();
-  live(`"${d.name}" taslağı yüklendi.`);
+  try {
+    const drafts = (await window.api.store.get('drafts')) || [];
+    const d = drafts.find(x => x.id === id);
+    if (!d) { fail('Taslak bulunamadı.'); return; }
+    applyLoadedData(d.data);
+    $('#dlg-drafts').close();
+    notify(`"${d.name}" taslağı yüklendi.`);
+  } catch (e) { fail('Taslak yüklenemedi: ' + e.message); }
 }
 async function deleteDraft(id) {
-  if (!confirm('Bu taslağı silmek istiyor musunuz?')) return;
-  const drafts = ((await window.api.store.get('drafts')) || []).filter(d => d.id !== id);
-  await window.api.store.set('drafts', drafts);
-  openDrafts();
+  if (!confirm('Bu taslağı silmek istiyor musunuz? Bu işlem geri alınamaz.')) return;
+  try {
+    const drafts = ((await window.api.store.get('drafts')) || []).filter(d => d.id !== id);
+    await window.api.store.set('drafts', drafts);
+    await openDrafts();
+    notify('Taslak silindi.');
+  } catch (e) { fail('Taslak silinemedi: ' + e.message); }
 }
 
 // ============= JSON YEDEK =============
 async function exportJSON() {
-  const data = JSON.stringify(currentSnapshot(), null, 2);
-  const filename = `${(state.form.name || 'CV').replace(/\s+/g, '_')}_yedek.json`;
-  const r = await window.api.save({
-    defaultName: filename,
-    filters: [{ name: 'JSON', extensions: ['json'] }],
-    dataText: data
-  });
-  if (r && !r.error) live('JSON yedeği kaydedildi.');
-  else if (r?.error) alert('Kaydetme hatası: ' + r.error);
+  try {
+    const payload = { app: 'ozgecmis-asistani', version: 4.1, exportedAt: new Date().toISOString(), ...currentSnapshot() };
+    const filename = `${(state.form.name || 'CV').replace(/\s+/g, '_')}_yedek.json`;
+    const r = await window.api.save({
+      defaultName: filename,
+      filters: [{ name: 'JSON', extensions: ['json'] }],
+      dataText: JSON.stringify(payload, null, 2),
+    });
+    if (!r) return;
+    if (r.error) { fail('Kaydetme hatası: ' + r.error); return; }
+    notify('JSON yedeği kaydedildi: ' + r);
+  } catch (e) { fail('Yedekleme hatası: ' + e.message); }
 }
 async function importJSON() {
   const r = await window.api.openJson();
   if (!r) return;
-  if (r.error) { alert(r.error); return; }
+  if (r.error) { fail(r.error); return; }
   if (!confirm('Mevcut CV verileri değiştirilecek. Devam edilsin mi?')) return;
   try {
-    Object.assign(state, r.data);
-    ['experiences','educations','certifications','projects','awards','volunteers','languages','references']
-      .forEach(k => { if (!Array.isArray(state[k])) state[k] = []; });
-    bindForm(); renderAll();
-    if (state.photo) setPhoto(state.photo); else $('#photo-preview').innerHTML = '<span class="photo-placeholder">Fotoğraf yok</span>';
-    autosave();
-    live('JSON yedeği yüklendi.');
-  } catch (e) { alert('Yükleme hatası: ' + e.message); }
+    applyLoadedData(r.data);
+    notify('JSON yedeği yüklendi.');
+  } catch (e) { fail('Yükleme hatası: ' + e.message); }
+}
+
+// ============= DÜZ METİN (ATS / ekran okuyucu) =============
+function buildPlainText() {
+  const f = state.form;
+  const L = [];
+  const head = (t) => { L.push('', t.toUpperCase(), '='.repeat(t.length)); };
+  L.push(f.name || 'İsimsiz CV');
+  if (f.title) L.push(f.title);
+  const contact = [f.email, f.phone, f.city, f.linkedin, f.website].filter(Boolean);
+  if (contact.length) L.push(contact.join(' | '));
+  const extra = [
+    f.birthdate && 'Doğum: ' + f.birthdate,
+    f.nationality && 'Uyruk: ' + f.nationality,
+    f.military && 'Askerlik: ' + f.military,
+    f.driver && 'Sürücü belgesi: ' + f.driver,
+    f.marital && 'Medeni durum: ' + f.marital,
+  ].filter(Boolean);
+  if (extra.length) L.push(extra.join(' | '));
+  if (f.summary) { head('Profesyonel Özet'); L.push(f.summary); }
+  if (state.experiences.length) {
+    head('İş Deneyimi');
+    state.experiences.forEach(e => {
+      L.push(`${e.position || ''}${e.company ? ' — ' + e.company : ''}${e.location ? ', ' + e.location : ''}`.trim());
+      if (e.startDate || e.endDate) L.push(`  Tarih: ${e.startDate || '?'} - ${e.endDate || 'Devam'}`);
+      txt(e.description).split('\n').map(s => s.replace(/^[-•*]\s*/, '').trim()).filter(Boolean)
+        .forEach(l => L.push('  - ' + l));
+    });
+  }
+  if (state.educations.length) {
+    head('Eğitim');
+    state.educations.forEach(e => {
+      L.push(`${e.school || ''}${e.degree ? ' — ' + e.degree : ''}`.trim());
+      const d = [e.startDate && e.startDate + ' - ' + (e.endDate || 'Devam'), e.gpa && 'Ortalama: ' + e.gpa, e.note].filter(Boolean);
+      if (d.length) L.push('  ' + d.join(' | '));
+    });
+  }
+  const simple = [
+    ['Sertifikalar & Kurslar', state.certifications, c => [c.name, c.issuer, c.date, c.credential]],
+    ['Projeler', state.projects, p => [p.name, p.role, p.link, p.description]],
+    ['Ödüller & Yayınlar', state.awards, a => [a.title, a.issuer, a.date, a.description]],
+    ['Gönüllü Çalışmalar', state.volunteers, v => [v.org, v.role, `${v.startDate || ''} - ${v.endDate || ''}`, v.description]],
+    ['Diller', state.languages, l => [l.name, l.level]],
+    ['Referanslar', state.references, r => [r.name, r.title, r.email, r.phone]],
+  ];
+  simple.forEach(([title, arr, fn]) => {
+    if (!arr.length) return;
+    head(title);
+    arr.forEach(x => L.push('- ' + fn(x).map(v => txt(v).trim()).filter(Boolean).join(' | ')));
+  });
+  if (f.skills) { head('Beceriler'); L.push(f.skills.split(',').map(s => s.trim()).filter(Boolean).join(', ')); }
+  if (f.hobbies) { head('İlgi Alanları'); L.push(f.hobbies.split(',').map(s => s.trim()).filter(Boolean).join(', ')); }
+  if (f.refRequest) L.push('', 'Referanslar istek üzerine sunulacaktır.');
+  return L.join('\n');
+}
+
+async function exportTXT() {
+  try {
+    const filename = `${(state.form.name || 'CV').replace(/\s+/g, '_')}.txt`;
+    const r = await window.api.save({
+      defaultName: filename,
+      filters: [{ name: 'Metin', extensions: ['txt'] }],
+      dataText: buildPlainText(),
+    });
+    if (!r) return;
+    if (r.error) { fail('TXT kaydetme hatası: ' + r.error); return; }
+    notify('Düz metin (ATS uyumlu) CV kaydedildi.');
+  } catch (e) { fail('TXT hatası: ' + e.message); }
 }
 
 // ============= PDF EXPORT (Chromium printToPDF) =============
@@ -649,22 +981,36 @@ function buildResumeHtml(template) {
 </body></html>`;
 }
 
+function exportGuard() {
+  if (!state.form.name?.trim()) {
+    fail('Dışa aktarmadan önce Ad Soyad alanını doldurun.');
+    $('#f-name').focus();
+    return false;
+  }
+  return true;
+}
+
 async function exportPDF(template) {
+  if (!exportGuard()) return;
   try {
+    live('PDF hazırlanıyor, lütfen bekleyin.');
     const html = buildResumeHtml(template);
     const filename = `${(state.form.name || 'CV').replace(/\s+/g, '_')}.pdf`;
     const r = await window.api.renderPdf({ html, defaultName: filename });
-    if (!r) return; // canceled
-    if (r.error) { alert('PDF oluşturma hatası: ' + r.error); return; }
-    live('PDF kaydedildi.');
+    if (!r) { live('PDF kaydetme iptal edildi.'); return; }
+    if (r.error) { fail('PDF oluşturma hatası: ' + r.error); return; }
+    notify('PDF kaydedildi: ' + r);
   } catch (e) {
-    alert('PDF hatası: ' + e.message);
+    fail('PDF hatası: ' + e.message);
   }
 }
 
 // ============= DOCX EXPORT =============
 async function exportDOCX(template) {
+  if (!exportGuard()) return;
+  if (!window.docx) { fail('Word motoru yüklenemedi. Uygulamayı yeniden başlatın.'); return; }
   try {
+    live('Word belgesi hazırlanıyor, lütfen bekleyin.');
     const D = window.docx;
     const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ExternalHyperlink } = D;
     const color = template === 'modern' ? '2563EB' : template === 'classic' ? '000000' : '333333';
@@ -769,7 +1115,7 @@ async function exportDOCX(template) {
       }
     });
 
-    const skills = state.form.skills.split(',').map(s => s.trim()).filter(Boolean);
+    const skills = txt(state.form.skills).split(',').map(s => s.trim()).filter(Boolean);
     if (skills.length) { children.push(heading('Beceriler')); children.push(p({ children: [run(skills.join(' • '), { size: 22 })] })); }
 
     if (state.languages.filter(l => l.name).length) {
@@ -812,22 +1158,24 @@ async function exportDOCX(template) {
       filters: [{ name: 'Word', extensions: ['docx'] }],
       dataBase64: b64
     });
-    if (r?.error) { alert('DOCX kaydetme hatası: ' + r.error); return; }
-    if (r) live('Word belgesi kaydedildi.');
+    if (r?.error) { fail('DOCX kaydetme hatası: ' + r.error); return; }
+    if (r) notify('Word belgesi kaydedildi: ' + r);
+    else live('Word kaydetme iptal edildi.');
   } catch (e) {
-    alert('DOCX oluşturma hatası: ' + e.message);
+    fail('DOCX oluşturma hatası: ' + e.message);
   }
 }
 
 // ============= MENÜ =============
 function bindMenu() {
-  window.api.onMenu('new', () => { openDrafts(); $('#draft-name').focus(); });
+  window.api.onMenu('new', () => { openDrafts(); setTimeout(() => $('#draft-name').focus(), 80); });
   window.api.onMenu('drafts', openDrafts);
   window.api.onMenu('import', importPDF);
   window.api.onMenu('import-json', importJSON);
   window.api.onMenu('export-json', exportJSON);
-  window.api.onMenu('save-pdf', () => $('#dlg-export').showModal());
-  window.api.onMenu('save-docx', () => $('#dlg-export').showModal());
+  window.api.onMenu('save-pdf', () => openDialog('#dlg-export'));
+  window.api.onMenu('save-docx', () => openDialog('#dlg-export'));
+  window.api.onMenu('save-txt', exportTXT);
   window.api.onMenu('ai', runAI);
   window.api.onMenu('ai-settings', openAISettings);
   window.api.onMenu('check', runCheck);
@@ -836,67 +1184,138 @@ function bindMenu() {
   window.api.onMenu('font-inc', () => bumpFont(0.1));
   window.api.onMenu('font-dec', () => bumpFont(-0.1));
   window.api.onMenu('help', openHelp);
-  window.api.onMenu('shortcuts', () => $('#dlg-shortcuts').showModal());
+  window.api.onMenu('shortcuts', () => openDialog('#dlg-shortcuts'));
+  window.api.onMenu('plain', () => window.openPlainView?.());
+  window.api.onMenu('ats', () => window.openATS?.());
+  window.api.onMenu('jobmatch', () => window.openJobMatch?.());
+  window.api.onMenu('cover', () => window.openCover?.());
 }
 
 // ============= DENETİM =============
 function runCheck() {
   const items = [];
-  if (!state.form.name?.trim()) items.push('❌ Ad Soyad alanı boş.');
-  if (!state.form.title?.trim()) items.push('⚠️ Mesleki unvan girilmemiş.');
-  if (!state.form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.form.email)) items.push('⚠️ Geçerli bir e-posta girin.');
-  if (!state.form.phone?.trim()) items.push('⚠️ Telefon bilgisi eksik.');
-  if (state.form.linkedin && !/^https?:\/\//i.test(state.form.linkedin)) items.push('⚠️ LinkedIn linki "https://" ile başlamalı.');
-  if (state.form.website && !/^https?:\/\//i.test(state.form.website)) items.push('⚠️ Website linki "https://" ile başlamalı.');
-  if (!state.form.linkedin?.trim()) items.push('💡 LinkedIn linki eklemek profesyonelliği artırır.');
-  if (!state.form.summary?.trim()) items.push('💡 Profesyonel özet ekleyin (AI ile oluşturabilirsiniz).');
-  else if (state.form.summary.length < 60) items.push('💡 Özet çok kısa; 3-4 cümle önerilir.');
+  const f = state.form;
+  if (!f.name?.trim()) items.push('❌ Ad Soyad alanı boş — dışa aktarma için zorunlu.');
+  if (!f.title?.trim()) items.push('⚠️ Mesleki unvan girilmemiş.');
+  if (!f.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) items.push('⚠️ Geçerli bir e-posta girin.');
+  if (!f.phone?.trim()) items.push('⚠️ Telefon bilgisi eksik.');
+  if (f.linkedin && !/^https?:\/\//i.test(f.linkedin)) items.push('⚠️ LinkedIn linki "https://" ile başlamalı.');
+  if (f.website && !/^https?:\/\//i.test(f.website)) items.push('⚠️ Website linki "https://" ile başlamalı.');
+  if (!f.linkedin?.trim()) items.push('💡 LinkedIn linki eklemek profesyonelliği artırır.');
+  if (!f.summary?.trim()) items.push('💡 Profesyonel özet ekleyin (AI ile oluşturabilirsiniz).');
+  else if (f.summary.length < 60) items.push('💡 Özet çok kısa; 3-4 cümle önerilir.');
+  else if (f.summary.length > 800) items.push('⚠️ Özet çok uzun; 4-5 cümleye indirin.');
   if (!state.experiences.length) items.push('⚠️ Hiç iş deneyimi eklenmemiş.');
   if (!state.educations.length) items.push('⚠️ Eğitim bilgisi eklenmemiş.');
-  if (!state.form.skills?.trim()) items.push('💡 Beceriler bölümü boş.');
-  else if (state.form.skills.split(',').filter(s => s.trim()).length < 3) items.push('💡 En az 3-5 beceri eklemeniz önerilir.');
+  state.experiences.forEach((e, i) => {
+    if (!e.position?.trim() || !e.company?.trim()) items.push(`⚠️ İş deneyimi ${i + 1}: pozisyon veya şirket eksik.`);
+    if (!txt(e.description).trim()) items.push(`💡 İş deneyimi ${i + 1}: görev/başarı maddesi yazılmamış.`);
+    else if (!/\d/.test(e.description)) items.push(`💡 İş deneyimi ${i + 1}: ölçülebilir sonuç (yüzde, sayı) ekleyin.`);
+  });
+  state.educations.forEach((e, i) => {
+    if (!e.school?.trim()) items.push(`⚠️ Eğitim ${i + 1}: okul adı eksik.`);
+  });
+  if (!f.skills?.trim()) items.push('💡 Beceriler bölümü boş.');
+  else if (f.skills.split(',').filter(s => s.trim()).length < 3) items.push('💡 En az 3-5 beceri eklemeniz önerilir.');
   if (!state.languages.length) items.push('💡 En az bir dil ekleyin.');
   if (!state.photo) items.push('💡 Profil fotoğrafı eklemek etkiyi artırır (yurtdışı başvuruları için opsiyonel).');
-  if (state.form.refRequest && state.references.length) items.push('⚠️ "İstek üzerine" seçili ama referans da eklenmiş — birini seçin.');
+  if (f.refRequest && state.references.length) items.push('⚠️ "İstek üzerine" seçili ama referans da eklenmiş — birini seçin.');
+  const dupSkills = (() => {
+    const arr = txt(f.skills).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    return arr.length !== new Set(arr).size;
+  })();
+  if (dupSkills) items.push('⚠️ Beceriler listesinde tekrar eden kayıtlar var.');
+
+  const pct = completeness();
+  const head = `Doluluk oranı: %${pct}. ${items.length ? items.length + ' iyileştirme önerisi bulundu.' : ''}`;
   if (!items.length) items.push('✅ Harika! CV\'niz eksiksiz ve profesyonel görünüyor.');
 
   const list = $('#check-list'); list.innerHTML = '';
+  const hdr = document.createElement('li'); hdr.textContent = head; hdr.style.fontWeight = '700';
+  list.appendChild(hdr);
   items.forEach(i => { const li = document.createElement('li'); li.textContent = i; list.appendChild(li); });
-  $('#dlg-check').showModal();
-  live(`Denetim tamamlandı, ${items.length} madde.`);
+  openDialog('#dlg-check', '#check-list');
+  live(`${head} Liste okunmaya hazır.`);
 }
 
 // ============= OTOMATIK DÜZELT =============
 function autofix() {
-  for (const e of state.experiences) {
-    e.description = e.description.split('\n')
-      .map(l => l.trim()).filter(Boolean)
-      .map(l => '• ' + l.replace(/^[-•*]\s*/, '')).join('\n');
-  }
-  renderExperiences(); autosave();
-  live('Metinler madde işaretli hale getirildi.');
+  const clean = (s) => txt(s).split('\n').map(l => l.trim()).filter(Boolean)
+    .map(l => '• ' + l.replace(/^[-•*·]\s*/, '')).join('\n');
+  const trimAll = (o, keys) => keys.forEach(k => { if (typeof o[k] === 'string') o[k] = o[k].trim().replace(/\s{2,}/g, ' '); });
+
+  state.experiences.forEach(e => { e.description = clean(e.description); trimAll(e, ['position','company','location','startDate','endDate']); });
+  state.volunteers.forEach(v => { v.description = clean(v.description); trimAll(v, ['org','role','startDate','endDate']); });
+  state.projects.forEach(p => trimAll(p, ['name','role','link','description']));
+  FORM_KEYS.forEach(k => { if (typeof state.form[k] === 'string' && k !== 'summary') state.form[k] = state.form[k].trim(); });
+  // Beceri ve hobilerdeki tekrar/boşlukları temizle
+  const uniqList = (s) => [...new Set(txt(s).split(',').map(x => x.trim()).filter(Boolean))].join(', ');
+  state.form.skills = uniqList(state.form.skills);
+  state.form.hobbies = uniqList(state.form.hobbies);
+  // Eksik https:// ekle
+  ['linkedin','website'].forEach(k => {
+    const v = txt(state.form[k]).trim();
+    if (v && !/^https?:\/\//i.test(v)) state.form[k] = 'https://' + v.replace(/^\/+/, '');
+  });
+
+  syncFormInputs(); renderAll(); autosave();
+  notify('Metinler düzenlendi: maddeler işaretlendi, tekrarlar ve fazla boşluklar temizlendi, linkler düzeltildi.');
 }
 
 // ============= PDF İÇE AKTAR =============
 async function importPDF() {
-  const result = await window.api.extractPdfText();
+  let result;
+  try { result = await window.api.extractPdfText(); }
+  catch (e) { fail('PDF okunamadı: ' + e.message); return; }
   if (!result) return;
-  if (result.error) { alert('PDF okuma hatası: ' + result.error); return; }
-  const text = result.text;
+  if (result.error) { fail('PDF okuma hatası: ' + result.error); return; }
+  const text = txt(result.text);
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  if (!lines.length) { alert('PDF\'de metin bulunamadı. Muhtemelen taranmış görsel PDF.'); return; }
-  state.form.name = state.form.name || lines[0];
-  if (lines[1] && lines[1].length < 80) state.form.title = state.form.title || lines[1];
-  const emailMatch = text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
-  if (emailMatch) state.form.email = state.form.email || emailMatch[0];
-  const phoneMatch = text.match(/(\+?\d[\d\s\-()]{8,})/);
-  if (phoneMatch) state.form.phone = state.form.phone || phoneMatch[0].trim();
-  const liMatch = text.match(/https?:\/\/(?:www\.)?linkedin\.com\/[^\s]+/i);
-  if (liMatch) state.form.linkedin = state.form.linkedin || liMatch[0];
-  const ghMatch = text.match(/https?:\/\/(?:www\.)?github\.com\/[^\s]+/i);
-  if (ghMatch) state.form.website = state.form.website || ghMatch[0];
-  ['name','title','email','phone','linkedin','website'].forEach(k => { const el = $(`#f-${k}`); if (el) el.value = state.form[k] || ''; });
-  autosave();
-  alert('PDF\'den temel bilgiler çekildi. Diğer alanları elle tamamlayın.');
-  live('PDF\'den bilgiler çekildi.');
+  if (!lines.length) {
+    fail('PDF\'de metin bulunamadı. Dosya taranmış bir görsel olabilir; bu durumda bilgileri elle girmeniz gerekir.');
+    return;
+  }
+  const found = [];
+  const set = (k, v) => { if (v && !txt(state.form[k]).trim()) { state.form[k] = v; found.push(k); } };
+
+  set('name', lines[0]);
+  if (lines[1] && lines[1].length < 80 && !/@|\d{4}/.test(lines[1])) set('title', lines[1]);
+  set('email', text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/)?.[0]);
+  set('phone', text.match(/(\+?\d[\d\s\-()]{8,})/)?.[0]?.trim());
+  set('linkedin', text.match(/https?:\/\/(?:www\.)?linkedin\.com\/[^\s]+/i)?.[0]);
+  set('website', text.match(/https?:\/\/(?:www\.)?github\.com\/[^\s]+/i)?.[0]);
+
+  // Beceriler bölümünü yakala
+  const skillsBlock = text.match(/(?:BECER[İI]LER|YETK[İI]NL[İI]KLER|SKILLS)\s*:?\s*\n([\s\S]{0,400}?)(?:\n\s*\n|$)/i);
+  if (skillsBlock && !txt(state.form.skills).trim()) {
+    const parsed = skillsBlock[1].split(/[,•\n·|]/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 40);
+    if (parsed.length) { state.form.skills = [...new Set(parsed)].join(', '); found.push('skills'); }
+  }
+  // Özet bölümünü yakala
+  const sumBlock = text.match(/(?:ÖZET|HAKKIMDA|PROF[İI]L|SUMMARY)\s*:?\s*\n([\s\S]{40,700}?)(?:\n\s*\n|$)/i);
+  if (sumBlock && !txt(state.form.summary).trim()) {
+    state.form.summary = sumBlock[1].replace(/\s*\n\s*/g, ' ').trim();
+    found.push('summary');
+  }
+
+  syncFormInputs(); autosave();
+  notify(found.length
+    ? `PDF'den ${found.length} alan dolduruldu. Kalan bölümleri elle tamamlayın.`
+    : 'PDF okundu ancak dolu alanlar korunduğu için değişiklik yapılmadı.');
 }
+
+// ============= GLOBAL KISAYOLLAR =============
+window.addEventListener('keydown', (e) => {
+  const key = e.key;
+  if ((e.ctrlKey || e.metaKey) && key.toLowerCase() === 'z' && !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) {
+    e.preventDefault(); undoLast(); return;
+  }
+  if (key === 'F3') { e.preventDefault(); openDialog('#dlg-sections', 'button'); return; }
+  if (key === 'F4') { e.preventDefault(); window.openPlainView?.(); return; }
+  if (key === 'F8') { e.preventDefault(); window.openATS?.(); return; }
+  if (key === 'F9') { e.preventDefault(); window.openJobMatch?.(); return; }
+  if (key === 'F10') { e.preventDefault(); window.openCover?.(); return; }
+  if (key === 'F1') { e.preventDefault(); openHelp(); return; }
+  if (key === 'F2') { e.preventDefault(); openDialog('#dlg-shortcuts'); return; }
+  if (key === 'F7') { e.preventDefault(); runCheck(); }
+});

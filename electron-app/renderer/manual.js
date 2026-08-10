@@ -2,15 +2,17 @@
 window.MANUAL_HTML = `
 <article aria-label="Kullanım Kılavuzu">
   <h3>1. Uygulamaya Genel Bakış</h3>
-  <p><strong>Öz Geçmiş Asistanı v4.0</strong>, profesyonel ve erişilebilir bir CV hazırlamanızı sağlayan masaüstü yazılımıdır. Verileriniz <em>yalnızca sizin bilgisayarınızda</em> saklanır; hiçbir sunucuya gönderilmez.</p>
+  <p><strong>Öz Geçmiş Asistanı v4.1</strong>, profesyonel ve erişilebilir bir CV hazırlamanızı sağlayan masaüstü yazılımıdır. Verileriniz <em>yalnızca sizin bilgisayarınızda</em> saklanır; hiçbir sunucuya gönderilmez.</p>
   <ul>
-    <li>PDF ve Word (DOCX) dışa aktarma</li>
+    <li>PDF, Word (DOCX) ve düz metin (ATS uyumlu TXT) dışa aktarma</li>
     <li>3 profesyonel şablon (Modern, Klasik, Minimal)</li>
-    <li>OpenAI (ChatGPT) veya Google Gemini ile AI özet üretimi</li>
-    <li>Otomatik kaydetme + çoklu taslak yönetimi</li>
+    <li>OpenAI (ChatGPT) veya Google Gemini ile AI özet ve ön yazı üretimi</li>
+    <li>ATS uyum puanı ve iş ilanı anahtar kelime eşleştirmesi</li>
+    <li>Otomatik kaydetme, çoklu taslak, Ctrl+Z ile geri alma</li>
     <li>Açık / Koyu / Yüksek Kontrast temaları</li>
-    <li>Klavye kısayolları + ekran okuyucu desteği</li>
+    <li>Klavye kısayolları, bölüm gezgini ve ekran okuyucu önizlemesi</li>
   </ul>
+
 
   <h3>2. Hızlı Başlangıç</h3>
   <ol>
@@ -102,9 +104,46 @@ CI/CD hattını kurdum</pre>
   <h3>11. İpuçları</h3>
   <ul>
     <li>Tek sayfada tutmak için deneyim açıklamalarını 3–5 madde ile sınırlayın.</li>
-    <li>ATS (İnsan Kaynakları) taramaları için Minimal şablonu tercih edin.</li>
+    <li>ATS (İnsan Kaynakları) taramaları için Minimal şablonu ya da düz metin çıktısını tercih edin.</li>
     <li>Her başvuru için deneyim açıklamalarını hedef pozisyona göre düzenleyin — taslak sistemi bunu kolaylaştırır.</li>
     <li>AI özetini kopya olarak değil, taslak olarak kullanın; kendi cümlelerinizle son halini verin.</li>
   </ul>
+
+  <h3>12. ATS Uyum Puanı (F8)</h3>
+  <p>CV'niz 100 puan üzerinden değerlendirilir. Puan; iletişim bilgilerinin tamlığı, özet uzunluğu, beceri sayısı, tarih aralıklarının eksiksizliği, ölçülebilir başarılar ve etkili eylem fiilleri gibi ölçütlere bakar. Her madde "✅" veya "❌" ile başlar ve kaç puan kazandığınızı söyler; ekran okuyucu listeyi baştan sona okuyabilir.</p>
+  <ul>
+    <li><strong>85–100:</strong> Mükemmel — başvuruya hazır.</li>
+    <li><strong>70–84:</strong> İyi — küçük eklemelerle güçlenir.</li>
+    <li><strong>50–69:</strong> Geliştirilebilir — eksik maddeleri tamamlayın.</li>
+    <li><strong>50 altı:</strong> Zayıf — temel bölümler eksik.</li>
+  </ul>
+
+  <h3>13. İş İlanı Eşleştirme (F9)</h3>
+  <ol>
+    <li>Başvuracağınız ilanın metnini kopyalayıp pencerede açılan alana yapıştırın.</li>
+    <li><strong>Analiz Et</strong> düğmesine basın. Uygulama ilandaki en önemli 40 anahtar kelimeyi çıkarır.</li>
+    <li>Eşleşme oranı ve eksik kelimeler listelenir; eksik kelimeler ekran okuyucuya ayrıca cümle olarak da okutulur.</li>
+    <li><strong>✨ Özeti İlana Göre Uyarla</strong> düğmesi, mevcut CV bilgilerinizi kullanarak özeti ilana göre yeniden yazar.</li>
+  </ol>
+  <p>Uyarı: Yalnızca gerçekten sahip olduğunuz beceri ve deneyimleri ekleyin. Sahip olmadığınız anahtar kelimeleri eklemek mülakatta sorun yaratır.</p>
+
+  <h3>14. Ön Yazı Oluşturma (F10)</h3>
+  <p>Şirket adı ve pozisyonu girin, isteğe bağlı olarak vurgulanmasını istediğiniz noktaları yazın ve <strong>Ön Yazı Oluştur</strong> düğmesine basın. Oluşan metni doğrudan düzenleyebilir, panoya kopyalayabilir veya TXT olarak kaydedebilirsiniz. Bu özellik AI anahtarı gerektirir.</p>
+
+  <h3>15. Ekran Okuyucu Kullanıcıları İçin Özellikler</h3>
+  <ul>
+    <li><strong>F4 — Ekran Okuyucu Önizlemesi:</strong> CV'nizin tamamı düz metin olarak tek bir okunabilir alanda sunulur; kelime sayısı, karakter sayısı ve tahmini sayfa sayısı duyurulur. Ok tuşlarıyla satır satır okuyabilirsiniz.</li>
+    <li><strong>F3 — Bölüm Gezgini:</strong> 12 bölüm arasında düğmelerle geçiş yapın. <kbd>Alt+1</kbd> … <kbd>Alt+9</kbd> ile doğrudan bölüme atlayabilirsiniz.</li>
+    <li><strong>Akıllı blok etiketleri:</strong> Her deneyim/eğitim bloğu "İş Deneyimi 2 / 3: Yazılım Geliştirici, ACME" biçiminde okunur, böylece kaçıncı kayıtta olduğunuzu bilirsiniz.</li>
+    <li><strong>Alt+Yukarı / Alt+Aşağı:</strong> Odaklandığınız bloğu sıralamada taşır; <kbd>Delete</kbd> siler, <kbd>Ctrl+Z</kbd> geri alır.</li>
+    <li><strong>Doluluk göstergesi:</strong> Başlıktaki ilerleme çubuğu yüzde olarak okunur ve her değişiklikte güncellenir.</li>
+    <li><strong>Hata duyuruları:</strong> Geçersiz e-posta veya link girdiğinizde alanın altında rol="alert" ile anında duyurulan bir mesaj oluşur; alan "geçersiz" olarak işaretlenir.</li>
+    <li><strong>Odak yönetimi:</strong> Pencereler kapandığında odak, pencereyi açtığınız düğmeye geri döner. Yeni blok eklediğinizde odak doğrudan ilk alana gider.</li>
+    <li><strong>Bildirimler:</strong> Kayıt, dışa aktarma ve hata mesajları hem görsel bildirim hem de canlı bölge duyurusu olarak verilir; kesintili uyarı pencereleri en aza indirilmiştir.</li>
+  </ul>
+
+  <h3>16. Metinleri Otomatik Düzenle (Ctrl+D)</h3>
+  <p>Bu komut: deneyim ve gönüllülük açıklamalarını madde işaretli hâle getirir, fazla boşlukları siler, beceri ve hobilerdeki tekrarları temizler, "https://" ile başlamayan LinkedIn/website adreslerini düzeltir. İşlem sonunda ne yapıldığı duyurulur.</p>
 </article>
 `;
+

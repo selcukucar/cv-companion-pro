@@ -18,6 +18,7 @@ function createMenu() {
         { type: 'separator' },
         { label: 'PDF Olarak Kaydet', accelerator: 'CmdOrCtrl+S', click: () => mainWindow.webContents.send('menu:save-pdf') },
         { label: 'Word Olarak Kaydet', accelerator: 'CmdOrCtrl+Shift+S', click: () => mainWindow.webContents.send('menu:save-docx') },
+        { label: 'Düz Metin (ATS) Olarak Kaydet', accelerator: 'CmdOrCtrl+Shift+X', click: () => mainWindow.webContents.send('menu:save-txt') },
         { type: 'separator' },
         { label: 'Çıkış', role: 'quit' }
       ]
@@ -26,6 +27,9 @@ function createMenu() {
       label: 'Araçlar',
       submenu: [
         { label: 'AI Özet Oluştur', accelerator: 'CmdOrCtrl+G', click: () => mainWindow.webContents.send('menu:ai') },
+        { label: 'Ön Yazı Oluştur', accelerator: 'F10', click: () => mainWindow.webContents.send('menu:cover') },
+        { label: 'İş İlanı Eşleştirme', accelerator: 'F9', click: () => mainWindow.webContents.send('menu:jobmatch') },
+        { label: 'ATS Uyum Puanı', accelerator: 'F8', click: () => mainWindow.webContents.send('menu:ats') },
         { label: 'Erişilebilirlik & İçerik Denetimi', accelerator: 'F7', click: () => mainWindow.webContents.send('menu:check') },
         { label: 'Metinleri Otomatik Düzenle', accelerator: 'CmdOrCtrl+D', click: () => mainWindow.webContents.send('menu:autofix') },
         { type: 'separator' },
@@ -35,6 +39,7 @@ function createMenu() {
     {
       label: 'Görünüm',
       submenu: [
+        { label: 'Ekran Okuyucu Önizlemesi', accelerator: 'F4', click: () => mainWindow.webContents.send('menu:plain') },
         { label: 'Tema Değiştir', accelerator: 'CmdOrCtrl+Shift+T', click: () => mainWindow.webContents.send('menu:theme') },
         { label: 'Yazı Boyutu +', accelerator: 'CmdOrCtrl+=', click: () => mainWindow.webContents.send('menu:font-inc') },
         { label: 'Yazı Boyutu -', accelerator: 'CmdOrCtrl+-', click: () => mainWindow.webContents.send('menu:font-dec') },
@@ -50,11 +55,12 @@ function createMenu() {
         { label: 'Kısayollar', accelerator: 'F2', click: () => mainWindow.webContents.send('menu:shortcuts') },
         { label: 'Hakkında', click: () => dialog.showMessageBox(mainWindow, {
           type: 'info', title: 'Hakkında',
-          message: 'Öz Geçmiş Asistanı v4.0',
-          detail: 'Profesyonel, erişilebilir CV oluşturucu.\n\nOpenAI & Gemini AI destekli.\nElectron + JavaScript ile geliştirildi.\n\n© 2026'
+          message: 'Öz Geçmiş Asistanı v4.1',
+          detail: 'Profesyonel, erişilebilir CV oluşturucu.\n\nOpenAI & Gemini AI destekli.\nATS uyum puanı, iş ilanı eşleştirme, ön yazı üretimi.\nElectron + JavaScript ile geliştirildi.\n\n© 2026'
         }) }
       ]
     }
+
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
@@ -65,7 +71,7 @@ function createWindow() {
     height: 920,
     minWidth: 960,
     minHeight: 640,
-    title: 'Öz Geçmiş Asistanı v4.0',
+    title: 'Öz Geçmiş Asistanı v4.1',
     backgroundColor: '#0f1216',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

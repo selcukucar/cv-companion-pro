@@ -200,3 +200,28 @@ kbd {
   .dialog-footer { display: none; }
   .manual-body { max-height: none; overflow: visible; }
 }
+
+/* ===== v4.1: bildirimler, doluluk ölçeri, hata mesajları, yeni diyaloglar ===== */
+.toast-area { position: fixed; bottom: 16px; right: 16px; z-index: 100; display: flex; flex-direction: column; gap: 8px; max-width: 380px; }
+.toast { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-left: 4px solid var(--primary);
+  border-radius: var(--radius); padding: 10px 14px; font-size: 14px; box-shadow: var(--shadow-lg); }
+.toast-error { border-left-color: var(--danger); }
+.toast-warn { border-left-color: #d97706; }
+
+.progress { position: relative; width: 120px; height: 18px; background: var(--secondary); border: 1px solid var(--border);
+  border-radius: 999px; overflow: hidden; }
+.progress-lg { width: 100%; height: 22px; margin-bottom: 12px; }
+.progress-bar { display: block; height: 100%; width: 0; background: var(--primary); transition: width .25s ease; }
+.progress-label { position: absolute; inset: 0; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--text); }
+
+.field-error { display: block; margin-top: 4px; color: var(--danger); font-size: 12px; font-weight: 600; }
+input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger) !important; outline-color: var(--danger); }
+
+.sections-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.plain-view { max-height: 55vh; overflow: auto; white-space: pre-wrap; font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 13px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; color: var(--text); }
+.ats-score { font-size: 18px; font-weight: 700; margin: 4px 0 10px; }
+
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.entry:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
