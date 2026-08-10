@@ -77,14 +77,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "CV Companion Pro — Erişilebilir Öz Geçmiş Asistanı" },
+      {
+        name: "description",
+        content:
+          "OpenAI & Gemini destekli, tamamen offline çalışan erişilebilir öz geçmiş asistanı. PDF/Word çıktı, ATS puanlama ve ekran okuyucu desteği.",
+      },
+      { name: "author", content: "CV Companion Pro" },
+      { property: "og:title", content: "CV Companion Pro — Erişilebilir Öz Geçmiş Asistanı" },
+      {
+        property: "og:description",
+        content:
+          "Windows için tamamen offline çalışan, ekran okuyucu uyumlu öz geçmiş asistanı. AI özet, ATS puanlama ve PDF/Word çıktı.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
