@@ -28,6 +28,13 @@ function stem(word: string): string {
   return stripped.length >= 3 ? stripped : word;
 }
 
+/** Strips Turkish diacritics for tolerant matching. */
+function fold(text: string): string {
+  return text
+    .replace(/ı/g, "i").replace(/İ/g, "i").replace(/ğ/g, "g").replace(/ü/g, "u")
+    .replace(/ş/g, "s").replace(/ö/g, "o").replace(/ç/g, "c");
+}
+
 /** Lowercased, stop-word filtered keyword tokens. Technical terms (.net, c#, c++) survive intact. */
 export function tokenize(text: string): string[] {
   const out: string[] = [];
@@ -64,11 +71,15 @@ export function atsReport(cvText: string): AtsReport {
   const hasEmail = /[^\s@]+@[^\s@]+\.[^\s@]+/.test(text);
   const hasPhone = /(\+?\d[\d\s()-]{7,})/.test(text);
   const bulletLines = lines.filter((l) => /^([-*•]|\d+[.)])\s+/.test(l)).length;
-  const numberedAchievements = lines.filter((l) => /\d+\s*(%|percent|kişi|adet|tl|usd|eur|x)/i.test(l)).length;
+  const numberedAchievements = lines.filter((l) =>
+    /(%\s*\d+|\d+\s*(%|percent|kişi|adet|tl|usd|eur|x))/i.test(l),
+  ).length;
   const dateRanges = (text.match(/\b(19|20)\d{2}\b/g) || []).length;
   const actionVerbHits = ACTION_VERBS.filter((v) => lower.includes(v)).length;
-  const sectionHits = ["deneyim", "eğitim", "beceri", "yetenek", "sertifika", "proje", "dil"].filter((s) =>
-    lower.includes(s),
+  // Diacritic-insensitive so "EGITIM" also counts as "eğitim".
+  const flat = fold(lower);
+  const sectionHits = ["deneyim", "egitim", "beceri", "yetenek", "sertifika", "proje", "dil"].filter((s) =>
+    flat.includes(s),
   ).length;
 
   const checks: AtsCheck[] = [
