@@ -138,30 +138,43 @@ const FORM_KEYS = ['name','title','email','phone','linkedin','website','city','b
   'military','driver','marital','summary','skills','hobbies'];
 let formBound = false;
 
+// Doğrulanan alanlar: hata kutusu sayfa yüklenirken bir kez oluşturulur.
+// Böylece hata görünüp kaybolduğunda düzen kaymaz (kaybolan tıklama sorunu).
+const VALIDATED_KEYS = ['email', 'linkedin', 'website'];
+
+function errorBox(k, el) {
+  const msgId = `err-${k}`;
+  let msg = document.getElementById(msgId);
+  if (!msg) {
+    msg = document.createElement('small');
+    msg.id = msgId;
+    msg.className = 'field-error';
+    msg.setAttribute('role', 'alert');
+    (el.parentElement || document.body).appendChild(msg);
+  }
+  return msg;
+}
+
 function validateField(k, el) {
+  if (!VALIDATED_KEYS.includes(k)) return true;
   let error = '';
   const v = (el.value || '').trim();
   if (v) {
     if (k === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) error = 'Geçerli bir e-posta adresi girin. Örnek: ad@ornek.com';
     if ((k === 'linkedin' || k === 'website') && !/^https?:\/\//i.test(v)) error = 'Adres "https://" ile başlamalıdır.';
   }
-  const msgId = `err-${k}`;
-  let msg = document.getElementById(msgId);
+  const msg = errorBox(k, el);
+  msg.textContent = error;
   if (error) {
-    if (!msg) {
-      msg = document.createElement('small');
-      msg.id = msgId; msg.className = 'field-error'; msg.setAttribute('role', 'alert');
-      el.parentElement.appendChild(msg);
-    }
-    msg.textContent = error;
     el.setAttribute('aria-invalid', 'true');
-    el.setAttribute('aria-describedby', msgId);
+    el.setAttribute('aria-describedby', msg.id);
   } else {
-    if (msg) msg.remove();
     el.removeAttribute('aria-invalid');
     el.removeAttribute('aria-describedby');
   }
+  return !error;
 }
+
 
 function syncFormInputs() {
   for (const k of FORM_KEYS) {
