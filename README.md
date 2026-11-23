@@ -1,13 +1,11 @@
 # Öz Geçmiş Asistanı · CV Assistant
 
-[Windows 0.12.2 önizlemesini indir](https://github.com/selcukucar/cv-companion-pro/releases) · [English](#english) · [Electron arşivi](https://github.com/selcukucar/cv-companion-pro/tree/archive/electron-v4)
-
-Kurulum EXE’si ve portable paketteki uygulama imzasızdır. Sürüm dosyalarının SHA-256 özetleri yayına eklenir. Windows SmartScreen uyarı gösterebilir.
+[Windows 0.12.4 önizlemesini indir](https://github.com/selcukucar/cv-companion-pro/releases) · [Electron arşivi](https://github.com/selcukucar/cv-companion-pro/tree/archive/electron-v4)
 
 Windows 10 ve 11 ana hedeflerdir. 32 ve 64 bit Windows için AnyCPU olarak derlenir. Çalıştırmak için .NET Framework 4.8 veya üzeri gerekir. Windows 10 22H2 ve Windows 11 bu gereksinimi kutudan karşılar. Kurulum paketi gereken sürüm eksikse Microsoft indirme sayfasını açmayı teklif eder. Portable ZIP içinde de aynı sayfanın bağlantısı var. Windows 10 22H2 ve Windows 11 bu gereksinimi kutudan karşılar. Kurulum paketi gereken sürüm eksikse Microsoft indirme sayfasını açmayı teklif eder. Portable ZIP içinde de aynı sayfanın bağlantısı var.
 
-- Kurulum EXE’si kullanıcı hesabına yüklenir ve Başlat menüsüne bir kısayol ekler. Önceki masaüstü önizlemesinin yerel taslakları, tercihleri ve anahtarları aynı kullanıcıyla açılır.
-- Portable ZIP’i yazılabilir bir klasöre çıkarın. OzgecmisAsistani.exe dosyasını bu klasörde açın. Taslaklar, ayarlar ve kısayollar Data klasöründe saklanır. Önceki sürümden bir taslağı taşımak için JSON yedeğini içe aktarabilirsiniz. API anahtarları Windows kullanıcı hesabında kalır.
+- Kurulum EXE’si kullanıcı hesabına yüklenir ve Başlat menüsüne bir kısayol ekler. Kurulu sürüm üzerine yapılan güncelleme mevcut taslakları korur. İlk kurulum veya kaldırıp yeniden kurma sırasında önceki yerel taslaklar Windows profilinde taslaklar-onceki-*.json adıyla arşivlenir ve uygulama boş bir taslakla açılır.
+- Portable ZIP’i yazılabilir bir klasöre çıkarın. OzgecmisAsistani.exe dosyasını bu klasörde açın. Taslaklar, ayarlar ve kısayollar Data klasöründe saklanır. Önceki sürümden bir taslağı taşımak için JSON yedeğini içe aktarabilirsiniz. API anahtarları Windows kullanıcı hesabında kalır. Başkalarıyla paylaşırken Releases sayfasındaki orijinal ZIP dosyasını kullanın. Kullanılmış Data klasöründe kişisel bilgiler bulunabilir.
 
 
 Türkçe ve İngilizce arayüz ve çıktı başlıkları desteklenir. Ayarlar’dan dili seçip programı yeniden açın. CV alanlarına yazdığınız metin korunur.
@@ -56,7 +54,3 @@ Yardım → Geri bildirim, ad, soyad ve sorun veya öneri alanlarını açar. E-
 Kaynak arşivini çıkarın ve Windows PowerShell veya PowerShell 7 içinde `.\Build.ps1` çalıştırın. İlk derleme sabitlenmiş bağımlılıkları NuGet üzerinden indirir. Program ve bağımlılıkları build klasörüne çıkar. Kurulum ve portable paketleri için `.\Package.ps1 -InnoCompiler "C:\yol\ISCC.exe"` kullanın. PDFsharp MIT lisansı pakette yer alır.
 
 CV alanları ve JSON yapısı, [Öz Geçmiş Asistanı Electron 4.1](https://github.com/selcukucar/cv-companion-pro/tree/archive/electron-v4/electron-app) kaynak kodundan uyarlanmıştır.
-
-## English
-
-CV Assistant is a Turkish and English Windows résumé editor designed for keyboard and screen-reader use. It supports local drafts, JSON backups, Word and tagged PDF exports, offline job-post comparison, and optional AI summary suggestions. Download the installer or extract the full portable ZIP from Releases. Both editions require .NET Framework 4.8 or later. Press F1 to open the offline HTML guide. The executable and installer are unsigned. The release includes SHA-256 checksums.

@@ -32,6 +32,7 @@ WizardStyle=modern
 UninstallDisplayIcon={app}\OzgecmisAsistani.exe
 CloseApplications=yes
 RestartApplications=no
+AppMutex=Local\OzgecmisAsistani.Desktop
 
 [Languages]
 Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
@@ -46,6 +47,8 @@ turkish.NetOpenFailed=Tarayıcı açılamadı. Microsoft indirme adresi: https:/
 english.NetOpenFailed=The browser could not be opened. Microsoft download address: https://dotnet.microsoft.com/download/dotnet-framework/net48
 turkish.PortableFolder=Bu klasör bir taşınabilir kurulum içeriyor. Kurulum için farklı bir klasör seçin.
 english.PortableFolder=This folder contains a portable copy. Select a different installation folder.
+turkish.DraftArchiveFailed=Önceki yerel taslaklar arşivlenemedi. Dosya erişimini kontrol edip kurulumu yeniden deneyin.
+english.DraftArchiveFailed=Previous local drafts could not be archived. Check file access and retry setup.
 
 [Files]
 Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -72,9 +75,42 @@ begin
   end;
 end;
 
+function ExistingInstall: Boolean;
+var
+  Folder: String;
+begin
+  Result := RegQueryStringValue(HKCU32,
+    'Software\Microsoft\Windows\CurrentVersion\Uninstall\{66E281C0-C678-4AB4-BE45-FCBBD9F45174}_is1',
+    'InstallLocation', Folder) and FileExists(AddBackslash(Folder) + 'OzgecmisAsistani.exe');
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  DataFolder, Library, Archive, Stamp: String;
+  Suffix: Integer;
 begin
   Result := '';
   if FileExists(ExpandConstant('{app}\portable.mode')) then
+  begin
     Result := ExpandConstant('{cm:PortableFolder}');
+    Exit;
+  end;
+  if ExistingInstall then
+    Exit;
+
+  DataFolder := ExpandConstant('{localappdata}\OzgecmisAsistaniDesktop');
+  Library := DataFolder + '\taslaklar.json';
+  if not FileExists(Library) then
+    Exit;
+
+  Stamp := GetDateTimeString('yyyymmdd-hhnnss', '', '');
+  Archive := DataFolder + '\taslaklar-onceki-' + Stamp + '.json';
+  Suffix := 1;
+  while FileExists(Archive) do
+  begin
+    Archive := DataFolder + '\taslaklar-onceki-' + Stamp + '-' + IntToStr(Suffix) + '.json';
+    Suffix := Suffix + 1;
+  end;
+  if not RenameFile(Library, Archive) then
+    Result := ExpandConstant('{cm:DraftArchiveFailed}');
 end;

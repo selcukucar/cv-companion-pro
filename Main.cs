@@ -74,7 +74,7 @@ internal sealed class Editor : Form
 
     public Editor()
     {
-        Text = L.T("Öz Geçmiş Asistanı 0.12.2 — Önizleme", "CV Assistant 0.12.2 Preview");
+        Text = L.T("Öz Geçmiş Asistanı 0.12.4 — Önizleme", "CV Assistant 0.12.4 Preview");
         if (AppPaths.Portable) Text += L.T(" (Taşınabilir)", " (Portable)");
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(900, 560);

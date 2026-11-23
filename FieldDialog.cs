@@ -6,8 +6,8 @@ using System.Windows.Forms;
 using Data = System.Collections.Generic.Dictionary<string, object>;
 
 [assembly: AssemblyTitle("Öz Geçmiş Asistanı / CV Assistant")]
-[assembly: AssemblyVersion("0.12.2.0")]
-[assembly: AssemblyInformationalVersion("0.12.2-preview")]
+[assembly: AssemblyVersion("0.12.4.0")]
+[assembly: AssemblyInformationalVersion("0.12.4-preview")]
 
 internal sealed class FieldDialog : Form
 {
