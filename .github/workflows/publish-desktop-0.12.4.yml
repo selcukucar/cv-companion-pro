@@ -59,8 +59,15 @@ jobs:
             } finally { $zip.Dispose() }
           }
           function Invoke-Setup($exe) {
-            $run = Start-Process -FilePath $exe -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/DIR=`"$install`"") -WindowStyle Hidden -Wait -PassThru
-            if ($run.ExitCode -ne 0) { throw "Setup failed with exit code $($run.ExitCode)." }
+            $log = Join-Path $root 'installer.log'
+            Write-Host "Installing $(Split-Path -Leaf $exe)"
+            $run = Start-Process -FilePath $exe -ArgumentList @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART',"/LOG=`"$log`"","/DIR=`"$install`"") -WindowStyle Hidden -Wait -PassThru
+            if ($run.ExitCode -ne 0) {
+              if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 35 }
+              reg query 'HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' /v Release /reg:32
+              reg query 'HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full' /v Release /reg:64
+              throw "Setup failed with exit code $($run.ExitCode)."
+            }
           }
           Invoke-Setup (Join-Path $root 'OzgecmisAsistani-0.12.2-setup.exe')
           if ((Test-Path -LiteralPath $library) -or (Get-ChildItem -LiteralPath $install -Recurse -File | Where-Object Name -match 'taslaklar|ai-keys')) {
