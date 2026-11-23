@@ -103,7 +103,7 @@ begin
   if not FileExists(Library) then
     Exit;
 
-  Stamp := GetDateTimeString('yyyymmdd-hhnnss', '', '');
+  Stamp := GetDateTimeString('yyyymmdd-hhnnss', '-', ':');
   Archive := DataFolder + '\taslaklar-onceki-' + Stamp + '.json';
   Suffix := 1;
   while FileExists(Archive) do
