@@ -1,126 +1,62 @@
-# Öz Geçmiş Asistanı v4.0
+# Öz Geçmiş Asistanı · CV Assistant
 
-Profesyonel, erişilebilir ve tamamen çevrimdışı çalışan masaüstü CV (öz geçmiş) hazırlama uygulaması. **Electron + JavaScript** ile geliştirilmiştir. Verileriniz yalnızca sizin bilgisayarınızda saklanır.
+[Windows 0.12.2 önizlemesini indir](https://github.com/selcukucar/cv-companion-pro/releases) · [English](#english) · [Electron arşivi](https://github.com/selcukucar/cv-companion-pro/tree/archive/electron-v4)
 
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-4.0.0-orange)
+Kurulum EXE’si ve portable paketteki uygulama imzasızdır. Sürüm dosyalarının SHA-256 özetleri yayına eklenir. Windows SmartScreen uyarı gösterebilir.
 
-## ✨ Özellikler
+Windows 10 ve 11 ana hedeflerdir. 32 ve 64 bit Windows için AnyCPU olarak derlenir. Çalıştırmak için .NET Framework 4.8 veya üzeri gerekir. Windows 10 22H2 ve Windows 11 bu gereksinimi kutudan karşılar. Kurulum paketi gereken sürüm eksikse Microsoft indirme sayfasını açmayı teklif eder. Portable ZIP içinde de aynı sayfanın bağlantısı var. Windows 10 22H2 ve Windows 11 bu gereksinimi kutudan karşılar. Kurulum paketi gereken sürüm eksikse Microsoft indirme sayfasını açmayı teklif eder. Portable ZIP içinde de aynı sayfanın bağlantısı var.
 
-- 📝 **Kapsamlı CV alanları:** Kişisel bilgiler, özet, deneyim, eğitim, sertifika, proje, ödül, gönüllülük, beceriler, diller, hobiler, referanslar
-- 🎨 **3 Profesyonel Şablon:** Modern, Klasik, Minimal (ATS uyumlu)
-- 🤖 **Çoklu AI Sağlayıcı Desteği:** OpenAI (GPT-4o/mini) veya Google Gemini (2.5 Flash/Pro) ile otomatik profesyonel özet
-- 📄 **Yüksek Kaliteli Dışa Aktarma:** PDF (Türkçe karakter tam desteği) ve Word (DOCX)
-- 📥 **İçe Aktarma:** Mevcut PDF CV'lerden bilgi çekme + JSON yedekleme/geri yükleme
-- 💾 **Çoklu Taslak:** Farklı pozisyonlar için birden çok CV sürümü, otomatik kaydetme
-- ♿ **Erişilebilirlik:** Ekran okuyucu desteği, ARIA canlı bildirimler, tam klavye navigasyonu, "İçeriğe atla" bağlantısı
-- 🌗 **Tema Seçenekleri:** Açık / Koyu / Yüksek Kontrast
-- 🔒 **Gizlilik Odaklı:** Tüm veriler yerelde; API anahtarları yalnızca seçtiğiniz sağlayıcıya gider
-- ⌨️ **Klavye Kısayolları:** F1 yardım, Ctrl+S PDF, Ctrl+Shift+S Word, Ctrl+G AI özet, F7 denetim ve daha fazlası
+- Kurulum EXE’si kullanıcı hesabına yüklenir ve Başlat menüsüne bir kısayol ekler. Önceki masaüstü önizlemesinin yerel taslakları, tercihleri ve anahtarları aynı kullanıcıyla açılır.
+- Portable ZIP’i yazılabilir bir klasöre çıkarın. OzgecmisAsistani.exe dosyasını bu klasörde açın. Taslaklar, ayarlar ve kısayollar Data klasöründe saklanır. Önceki sürümden bir taslağı taşımak için JSON yedeğini içe aktarabilirsiniz. API anahtarları Windows kullanıcı hesabında kalır.
 
-## 📸 Ekran Görüntüleri
 
-> Ekran görüntülerini `docs/screenshots/` klasörüne ekleyip buraya bağlayabilirsiniz.
+Türkçe ve İngilizce arayüz ve çıktı başlıkları desteklenir. Ayarlar’dan dili seçip programı yeniden açın. CV alanlarına yazdığınız metin korunur.
 
-## 🚀 Kurulum
+[Microsoft .NET Framework 4.8 çalışma zamanı](https://dotnet.microsoft.com/download/dotnet-framework/net48)
 
-### Hazır Sürümü İndir
+[Microsoft .NET Framework 4.8 çalışma zamanı](https://dotnet.microsoft.com/download/dotnet-framework/net48)
 
-[Releases](../../releases) sayfasından işletim sisteminize uygun sürümü indirin:
+## Klavye ile kullanım
 
-- **Windows:** `OzgecmisAsistani-win32-x64.zip` — arşivi açın, `OzgecmisAsistani.exe` çalıştırın
-- **macOS:** `OzgecmisAsistani-darwin-x64.zip`
-- **Linux:** `OzgecmisAsistani-linux-x64.tar.gz`
+- F1 çevrimdışı HTML kullanım kılavuzunu varsayılan tarayıcıda açar. İçindekiler bağlantılarıyla veya ekran okuyucunuzun başlık gezinmesiyle konu seçebilirsiniz.
+- Yardım → Klavye kısayolları bölümünden komutların etkin tuşlarını görün, değiştirin veya varsayılana döndürün.
+- Ctrl+Virgül ile yazı boyutu ve durum duyurusu ayarlarını açın. Ayarlar kullanıcı profilinde taslaklardan ayrı saklanır. Renkler Windows’un sistem ayarlarını izler.
+- F3 bölüm listesine gider. Ok tuşlarıyla bölüm seçin. Enter, düzenleme penceresini açar veya boş bir bölümde Kayıt ekle düğmesine gider.
+- Tab ve Shift+Tab, alanlar ve düğmeler arasında dolaşır. Kaydet ile değişiklikler yerel taslağa yazılır.
+- F4 düz metin önizlemesini açar. Tüm metni kopyala düğmesiyle CV’yi panoya alabilirsiniz.
+- Ctrl+F ile CV’de bir alanı veya yazdığınız metni arayın. Sonuçları ok tuşlarıyla seçip Enter ile ilgili alanı açın.
+- F7, etkin taslağın içerik ve çıktı erişilebilirliği denetimini açar. Ok tuşlarıyla bulguyu seçin ve Enter ile ilgili alanı açın. Düzenleme penceresi kapanınca denetim sonuçları yenilenir. Esc ile denetimi kapatabilirsiniz.
+- F9, ilan metnindeki terimleri etkin CV ile çevrimdışı karşılaştırır. İlan kaydedilmez. Sonuçlar sözcük eşleşmelerini gösterir.
+- Ctrl+N yeni taslak oluşturur. Etkin taslak açılır kutusuyla taslak değiştirin.
+- Ctrl+Shift+N etkin taslağın düzenlenebilir bir kopyasını oluşturur.
+- Ctrl+Z, bu oturumda etkin taslaktan son silinen kaydı geri getirir.
+- F6 son işlem durumunu açar.
+- Ctrl+O eski Electron JSON yedeğini ayrı bir taslak olarak açar.
+- Ctrl+S düz metin çıktısı ve Ctrl+Shift+S JSON yedeği oluşturur.
+- Ctrl+Shift+W Word belgesi (.docx) oluşturur. Bölümler Word gezinti bölmesinde başlık olarak görünür.
 
-### Kaynak Koddan Çalıştır
+- Ctrl+Shift+P, seçilebilir metin, yer imleri ve başlık etiketleri içeren A4 PDF oluşturur. PDF doğrudan uygulama tarafından üretilir.
 
-```bash
-git clone https://github.com/selcukucar/cv-companion-pro.git
-cd cv-companion-pro/electron-app
-npm install
-npm start
-```
+Kurulu sürümde taslaklar `%LOCALAPPDATA%\OzgecmisAsistaniDesktop\taslaklar.json` içinde saklanır. Yedeklerde kişisel bilgiler bulunabilir. Eski yedekten gelen fotoğraf JSON içinde korunur.
 
-### Kendi Kurulum Paketinizi Oluşturun
+PDF içe aktarma, fotoğraf düzenleme ve ATS analizi bu önizlemenin kapsamı dışındadır.
 
-```bash
-cd electron-app
-npm run build:win        # Windows .exe için
-# veya farklı platform:
-npx @electron/packager . "OzgecmisAsistani" --platform=darwin --arch=x64 --out=dist --overwrite
-```
+## İsteğe bağlı yapay zekâ özet önerisi
 
-## 🤖 AI Kurulumu (Opsiyonel)
+Ctrl+G ile gönderilecek metni açın. Varsayılan metin unvan ve becerilerden oluşur. Ayarlar → Yapay zekâ sağlayıcıları bölümüne OpenAI veya Gemini anahtarınızı ekleyin. Düzenleyebileceğiniz bu metin yalnızca seçtiğiniz sağlayıcıya gönderilir. Anahtarlar Windows kullanıcı hesabına bağlı DPAPI ile şifrelenir ve CV yedeğine eklenmez. API kullanımı ücretli olabilir. Öneriyi inceleyip Uygula’yı seçtiğinizde etkin taslağın profesyonel özeti değişir.
 
-Uygulama içinde **Araçlar → AI Sağlayıcı Ayarları** menüsünden:
+Sağlayıcınızın kullanım ve veri işleme koşulları uygulanır. [Gemini API koşulları](https://ai.google.dev/gemini-api/terms) · [OpenAI API veri denetimleri](https://developers.openai.com/api/docs/guides/your-data)
 
-- **OpenAI:** [platform.openai.com/api-keys](https://platform.openai.com/api-keys) adresinden `sk-...` anahtarı alın
-- **Google Gemini:** [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) adresinden ücretsiz anahtar alın
+## Geri bildirim ve güncelleme
 
-API anahtarları yalnızca yerel bilgisayarınızda saklanır.
+Yardım → Geri bildirim, ad, soyad ve sorun veya öneri alanlarını açar. E-posta taslağı aç düğmesi, info@selcukucar.com adresine bir taslak hazırlar. Mesajı e-posta uygulamanızda gönderirsiniz. Yardım → Güncellemeleri denetle, desktop-v ile başlayan sürümleri arar. Yayımlanmış paketin SHA-256 özeti GitHub verisinde varsa paketi seçtiğiniz konuma indirebilir. Kurulum EXE’sini kendiniz açın. Portable sürümü güncellerken uygulamayı kapatıp ZIP’i aynı klasöre çıkarın ve Data klasörünü saklayın.
 
-## ⌨️ Klavye Kısayolları
+## Kaynak koddan derleme
 
-| Kısayol | İşlev |
-|---------|-------|
-| `F1` | Kullanım kılavuzu |
-| `F2` | Kısayol listesi |
-| `F7` | Erişilebilirlik & içerik denetimi |
-| `Ctrl+N` | Yeni taslak |
-| `Ctrl+T` | Taslakları yönet |
-| `Ctrl+S` | PDF olarak kaydet |
-| `Ctrl+Shift+S` | Word olarak kaydet |
-| `Ctrl+O` | PDF'den bilgi çek |
-| `Ctrl+G` | AI ile özet oluştur |
-| `Ctrl+D` | Metinleri otomatik düzenle |
-| `Ctrl+Shift+T` | Tema değiştir |
-| `Ctrl+=` / `Ctrl+-` | Yazı boyutu büyüt / küçült |
+Kaynak arşivini çıkarın ve Windows PowerShell veya PowerShell 7 içinde `.\Build.ps1` çalıştırın. İlk derleme sabitlenmiş bağımlılıkları NuGet üzerinden indirir. Program ve bağımlılıkları build klasörüne çıkar. Kurulum ve portable paketleri için `.\Package.ps1 -InnoCompiler "C:\yol\ISCC.exe"` kullanın. PDFsharp MIT lisansı pakette yer alır.
 
-## 🛠️ Teknoloji Yığını
+CV alanları ve JSON yapısı, [Öz Geçmiş Asistanı Electron 4.1](https://github.com/selcukucar/cv-companion-pro/tree/archive/electron-v4/electron-app) kaynak kodundan uyarlanmıştır.
 
-- **Electron 33** — çapraz platform masaüstü çatısı
-- **JavaScript (Vanilla)** — çerçeve bağımlılığı yok, hızlı ve hafif
-- **electron-store** — yerel veri saklama
-- **docx** — Word (DOCX) üretimi
-- **pdf-parse** — PDF'den metin çıkarma
-- **Chromium printToPDF** — tam Unicode destekli PDF üretimi
-- **GitHub Actions** — otomatik çapraz platform build & release
+## English
 
-## 📦 Otomatik Build & Release
-
-Bu proje, `v*` biçiminde bir etiket (tag) push edildiğinde GitHub Actions ile Windows, macOS ve Linux için otomatik olarak paketlenir ve GitHub Releases sayfasında yayınlanır.
-
-Yeni bir sürüm çıkarmak için:
-
-```bash
-git tag v4.0.1
-git push origin v4.0.1
-```
-
-Ayrıca **Actions** sekmesinden "Build & Release Electron App" workflow'unu elle de tetikleyebilirsiniz.
-
-## 🤝 Katkıda Bulunma
-
-Katkılar memnuniyetle karşılanır!
-
-1. Bu depoyu fork edin
-2. Yeni bir dal oluşturun (`git checkout -b ozellik/yeni-ozellik`)
-3. Değişikliklerinizi commit'leyin (`git commit -m 'Yeni özellik: ...'`)
-4. Dalınıza push edin (`git push origin ozellik/yeni-ozellik`)
-5. Pull Request açın
-
-Hata bildirimleri ve öneriler için lütfen [Issues](../../issues) sekmesini kullanın.
-
-## 📄 Lisans
-
-Bu proje **MIT lisansı** ile lisanslanmıştır. Ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
-
-## 🙏 Teşekkür
-
-- Erişilebilirlik geri bildirimleri için tüm kullanıcılara
-- Açık kaynak topluluğuna
-
----
-
-**Sorun mu yaşıyorsunuz?** [Issue açın](../../issues/new) — Türkçe destek verilmektedir.
+CV Assistant is a Turkish and English Windows résumé editor designed for keyboard and screen-reader use. It supports local drafts, JSON backups, Word and tagged PDF exports, offline job-post comparison, and optional AI summary suggestions. Download the installer or extract the full portable ZIP from Releases. Both editions require .NET Framework 4.8 or later. Press F1 to open the offline HTML guide. The executable and installer are unsigned. The release includes SHA-256 checksums.
